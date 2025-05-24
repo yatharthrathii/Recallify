@@ -17,7 +17,7 @@ const Footer = () => {
                 {/* Social Links */}
                 <div className="flex space-x-6 text-2xl">
                     <a
-                        href="https://www.linkedin.com/in/YatharthRathi" // Change to your actual LinkedIn URL
+                        href="https://www.linkedin.com/in/yatharthrathii" // Change to your actual LinkedIn URL
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="LinkedIn"
@@ -26,7 +26,7 @@ const Footer = () => {
                         <FaLinkedin />
                     </a>
                     <a
-                        href="https://www.instagram.com/YatharthRathi" // Change to your actual Instagram URL
+                        href="https://www.instagram.com/yatharthrathii/#" // Change to your actual Instagram URL
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Instagram"
@@ -35,7 +35,7 @@ const Footer = () => {
                         <FaInstagram />
                     </a>
                     <a
-                        href="https://twitter.com/YatharthRathi" // Change to your actual X/Twitter URL
+                        href="https://x.com/yatharthrathiii?t=_HYFcs11Ml-xpPY1XeyC_Q&s=09" // Change to your actual X/Twitter URL
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="X Twitter"
@@ -44,7 +44,7 @@ const Footer = () => {
                         <FaTwitter />
                     </a>
                     <a
-                        href="https://github.com/YatharthRathi" // Change to your actual GitHub URL
+                        href="https://github.com/yatharthrathii/yatharthrathii" // Change to your actual GitHub URL
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="GitHub"

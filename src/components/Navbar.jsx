@@ -18,7 +18,7 @@ const Navbar = () => {
         <nav className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md fixed z-10">
             <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
                 <div className="text-2xl font-bold tracking-wide cursor-pointer hover:scale-105 transition-transform">
-                    Recallify 🧠
+                    <Link to="/">Recallify 🧠</Link>
                 </div>
 
                 {/* Desktop Menu */}
@@ -27,21 +27,18 @@ const Navbar = () => {
                         <Link
                             key={item.name}
                             to={item.path}
-                            className={`relative group cursor-pointer ${
-                                isActive(item.path) ? "text-amber-300" : ""
-                            }`}
+                            className={`relative group cursor-pointer ${isActive(item.path) ? "text-amber-300" : ""
+                                }`}
                         >
                             <span
-                                className={`transition ${
-                                    isActive(item.path) ? "text-amber-300" : "group-hover:text-amber-300"
-                                }`}
+                                className={`transition ${isActive(item.path) ? "text-amber-300" : "group-hover:text-amber-300"
+                                    }`}
                             >
                                 {item.name}
                             </span>
                             <span
-                                className={`absolute left-0 -bottom-1 h-0.5 bg-amber-300 transition-all ${
-                                    isActive(item.path) ? "w-full" : "w-0 group-hover:w-full"
-                                }`}
+                                className={`absolute left-0 -bottom-1 h-0.5 bg-amber-300 transition-all ${isActive(item.path) ? "w-full" : "w-0 group-hover:w-full"
+                                    }`}
                             ></span>
                         </Link>
                     ))}
@@ -64,9 +61,8 @@ const Navbar = () => {
                             key={item.name}
                             to={item.path}
                             onClick={() => setMenuOpen(false)}
-                            className={`transition cursor-pointer ${
-                                isActive(item.path) ? "text-amber-300" : "hover:text-amber-300"
-                            }`}
+                            className={`transition cursor-pointer ${isActive(item.path) ? "text-amber-300" : "hover:text-amber-300"
+                                }`}
                         >
                             {item.name}
                         </Link>

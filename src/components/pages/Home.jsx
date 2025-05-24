@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 
 export default function HomeBody() {
     const [glow, setGlow] = useState(false);
@@ -17,8 +18,8 @@ export default function HomeBody() {
                     Supercharge Your Memory with{" "}
                     <span
                         className={`text-4xl sm:text-5xl font-extrabold mb-4 leading-tight transition-colors duration-1000 ${glow
-                                ? "text-purple-400 drop-shadow-[0_0_10px_rgba(167,139,250,0.8)]"
-                                : "text-purple-300"
+                            ? "text-purple-400 drop-shadow-[0_0_10px_rgba(167,139,250,0.8)]"
+                            : "text-purple-300"
                             }`}
                     >
                         Recallify
@@ -29,7 +30,7 @@ export default function HomeBody() {
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-4">
                     <button className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-xl transition duration-300 text-lg font-semibold">
-                        Get Started
+                        <Link to="/create">Get Started</Link>
                     </button>
                     <button className="px-6 py-3 border border-white hover:bg-white hover:text-indigo-800 rounded-xl transition duration-300 text-lg font-semibold">
                         Learn More
