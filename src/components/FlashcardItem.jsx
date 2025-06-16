@@ -32,7 +32,7 @@ const FlashcardItem = ({ card }) => {
 
                     {/* Back (Answer) */}
                     <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-purple-500 text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
-                        <p className="text-lg sm:text-xl font-semibold mb-4">{card.answer}</p>
+                        <p className="text-lg sm:text-xl font-semibold mb-4 break-words max-h-40 overflow-y-auto pr-2 custom-scroll">{card.answer}</p>
 
                         <div className="flex gap-4 justify-center mt-4">
                             {/* Delete Button */}
