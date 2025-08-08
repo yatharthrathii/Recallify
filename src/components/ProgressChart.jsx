@@ -17,7 +17,7 @@ const ProgressChart = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             setAnimate(true);
-        }, 100); // slight delay to trigger transition smoothly
+        }, 100);
         return () => clearTimeout(timer);
     }, []);
 
@@ -35,11 +35,11 @@ const ProgressChart = () => {
                         <div key={idx} className="flex flex-col items-center w-full">
                             <div className="relative w-10 h-48 flex items-end justify-center group">
                                 <div
-                                    className="w-full bg-indigo-600 rounded-t-md group-hover:bg-indigo-400"
+                                    className="w-full bg-gray-600 rounded-t-md group-hover:bg-gray-400"
                                     style={{
                                         height: animate ? `${heightPercent}%` : "0%",
                                         transition: "height 0.7s ease-out",
-                                        transitionDelay: `${idx * 150}ms`, // delay between bars
+                                        transitionDelay: `${idx * 150}ms`, 
                                     }}
                                 >
                                     {/* Tooltip */}

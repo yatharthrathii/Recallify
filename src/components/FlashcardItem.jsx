@@ -26,12 +26,12 @@ const FlashcardItem = ({ card }) => {
                         }`}
                 >
                     {/* Front (Question) */}
-                    <div className="absolute w-full h-full backface-hidden bg-indigo-500 text-white p-4 rounded-xl shadow-lg flex items-center justify-center text-lg sm:text-xl font-semibold text-center">
+                    <div className="absolute w-full h-full backface-hidden bg-gray-600 text-white p-4 rounded-xl shadow-lg flex items-center justify-center text-lg sm:text-xl font-semibold text-center">
                         {card.question}
                     </div>
 
                     {/* Back (Answer) */}
-                    <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-purple-500 text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <div className="absolute w-full h-full backface-hidden rotate-y-180 bg-gray-700 text-white p-4 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
                         <p className="text-lg sm:text-xl font-semibold mb-4 break-words max-h-40 overflow-y-auto pr-2 custom-scroll">{card.answer}</p>
 
                         <div className="flex gap-4 justify-center mt-4">
@@ -41,9 +41,9 @@ const FlashcardItem = ({ card }) => {
                                     e.stopPropagation();
                                     deleteFlashcard(card.id);
                                 }}
-                                className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-semibold text-white transition duration-300 ease-out bg-gradient-to-r from-pink-500 to-red-500 rounded-lg shadow-md hover:scale-105 hover:shadow-lg"
+                                className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-semibold text-gray transition duration-300 ease-out bg-red-600 rounded-lg shadow-md hover:scale-105 hover:shadow-lg"
                             >
-                                🗑 Delete
+                                Delete
                             </button>
 
                             {/* Edit Button */}
@@ -52,9 +52,9 @@ const FlashcardItem = ({ card }) => {
                                     e.stopPropagation(); // stop flip on edit click
                                     setShowModal(true); // show modal
                                 }}
-                                className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-semibold text-white transition duration-300 ease-out bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg shadow-md hover:scale-105 hover:shadow-lg"
+                                className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-semibold text-gray transition duration-300 ease-out bg-emerald-700 rounded-lg shadow-md hover:scale-105 hover:shadow-lg"
                             >
-                                ✏️ Edit
+                                Edit
                             </button>
                         </div>
                     </div>
