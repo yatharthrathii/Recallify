@@ -26,20 +26,24 @@ Welcome to **Recallify** — a modern, sleek, and intelligent flashcard app buil
 
 | Home Page |
 
-![Screenshot 2025-05-24 145532](https://github.com/user-attachments/assets/f3dac9fe-e3e8-4c6d-825b-02b94c6bfe38)
+<img width="1919" height="859" alt="Screenshot 2025-08-08 143043" src="https://github.com/user-attachments/assets/81ae3a84-d3a7-4aa8-9764-6406249df618" />
+
 
 | Flashcard Create |
 
-![Screenshot 2025-05-24 145545](https://github.com/user-attachments/assets/bd7727b0-79f0-46f4-8e3a-c4a0b6a979af)
-![Screenshot 2025-05-24 150046](https://github.com/user-attachments/assets/cffe99e0-fb6a-40ff-8b87-73d1694096b6)
+<img width="1919" height="871" alt="Screenshot 2025-08-08 143216" src="https://github.com/user-attachments/assets/efface94-30be-4182-8ba9-c7b5e032b2a5" />
+
+<img width="1919" height="868" alt="Screenshot 2025-08-08 143146" src="https://github.com/user-attachments/assets/417a98f8-148c-4bed-92ea-398af10e4aa8" />
+
 
 | Quiz Mode |
 
-![Screenshot 2025-05-24 145607](https://github.com/user-attachments/assets/940f9193-200c-4c54-9bf9-99abe2da20ba)
+<img width="1919" height="866" alt="Screenshot 2025-08-08 143237" src="https://github.com/user-attachments/assets/d18d228a-7959-42bd-8b62-47e2dea53934" />
+
 
 |  Progress Chart |
 
-![Screenshot 2025-05-24 145621](https://github.com/user-attachments/assets/6a7525a9-ec05-46b0-9e11-037c43088378)
+<img width="1919" height="865" alt="Screenshot 2025-08-08 143250" src="https://github.com/user-attachments/assets/9d9c458f-862d-428d-8aa5-ccf101153a36" />
 
 
 
