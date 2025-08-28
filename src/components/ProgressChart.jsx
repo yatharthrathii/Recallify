@@ -39,10 +39,10 @@ const ProgressChart = () => {
                                     style={{
                                         height: animate ? `${heightPercent}%` : "0%",
                                         transition: "height 0.7s ease-out",
-                                        transitionDelay: `${idx * 150}ms`, 
+                                        transitionDelay: `${idx * 150}ms`,
                                     }}
                                 >
-                                    {/* Tooltip */}
+
                                     <div className="absolute -top-8 text-xs text-white bg-gray-800 px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition duration-300">
                                         {item.count} cards
                                     </div>

@@ -4,14 +4,12 @@ import EditModal from "./EditModal";
 
 const FlashcardItem = ({ card }) => {
     const [flipped, setFlipped] = useState(false);
-    const { deleteFlashcard, editFlashcard } = useFlashcard();
+    const { deleteCard, editCard } = useFlashcard()
 
-    // For showing/hiding edit popup
     const [showModal, setShowModal] = useState(false);
 
-    // Function to handle modal save (edit)
     const handleEditSave = (updatedQuestion, updatedAnswer) => {
-        editFlashcard(card.id, updatedQuestion, updatedAnswer);
+        editCard(card.id, updatedQuestion, updatedAnswer);
         setShowModal(false);
     };
 
@@ -39,7 +37,7 @@ const FlashcardItem = ({ card }) => {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteFlashcard(card.id);
+                                    deleteCard(card.id);
                                 }}
                                 className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-semibold text-gray transition duration-300 ease-out bg-red-600 rounded-lg shadow-md hover:scale-105 hover:shadow-lg"
                             >
@@ -49,8 +47,8 @@ const FlashcardItem = ({ card }) => {
                             {/* Edit Button */}
                             <button
                                 onClick={(e) => {
-                                    e.stopPropagation(); // stop flip on edit click
-                                    setShowModal(true); // show modal
+                                    e.stopPropagation();
+                                    setShowModal(true);
                                 }}
                                 className="relative inline-flex items-center justify-center px-5 py-2 overflow-hidden font-semibold text-gray transition duration-300 ease-out bg-emerald-700 rounded-lg shadow-md hover:scale-105 hover:shadow-lg"
                             >

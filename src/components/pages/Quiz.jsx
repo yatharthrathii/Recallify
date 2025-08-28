@@ -60,7 +60,7 @@ const Quiz = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg flex flex-col min-h-screen">
+        <div className="max-w-4xl mx-auto p-6 mt-5 bg-white rounded-xl shadow-lg flex flex-col min-h-screen">
             {/* Timer & Controls */}
             <div className="flex justify-between items-center mb-6 gap-20">
                 <div className="text-lg font-semibold text-gray-700">
@@ -163,7 +163,7 @@ const Quiz = () => {
             </div>
 
             {/* ProgressChart at bottom */}
-            <div className="mt-auto">
+            <div className="mt-5">
                 <ProgressChart />
             </div>
 

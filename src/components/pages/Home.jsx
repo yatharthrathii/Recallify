@@ -1,26 +1,52 @@
 import { Link } from "react-router-dom";
+import { useFlashcard } from "../context/FlashcardContext";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 export default function HomeBody() {
+    const { flashcards } = useFlashcard();
+    const { user } = useContext(AuthContext);
 
     const features = [
-        { title: "Smart Repetition", desc: "Uses spaced repetition logic to boost long-term memory." },
-        { title: "Clean UI", desc: "Minimal, modern, and distraction-free flashcard experience." },
-        { title: "Offline First", desc: "All your cards saved in local storage. No internet needed." },
-        { title: "Fast & Lightweight", desc: "Optimized to load quickly and run smoothly on any device." },
-        { title: "Privacy Focused", desc: "Your data stays on your device — no tracking or ads." },
-        { title: "Customizable", desc: "Adjust themes, fonts, and layouts to your liking (coming soon!)." },
+        {
+            title: "Smart Repetition",
+            desc: flashcards.length
+                ? `You have ${flashcards.length} flashcards. Spaced repetition helps retain them effectively.`
+                : "Uses spaced repetition logic to boost long-term memory.",
+        },
+        {
+            title: "Clean UI",
+            desc: "Minimal, modern, and distraction-free flashcard experience.",
+        },
+        {
+            title: "Offline First",
+            desc: user
+                ? "Your flashcards are synced with Firebase and available offline."
+                : "All your cards saved in local storage. No internet needed.",
+        },
+        {
+            title: "Fast & Lightweight",
+            desc: "Optimized to load quickly and run smoothly on any device.",
+        },
+        {
+            title: "Dynamic Quiz (Coming Soon)",
+            desc: flashcards.length
+                ? `Auto-generated quizzes based on your ${flashcards.length} flashcards.`
+                : "Default quiz included. More quizzes will appear as you add cards.",
+        },
+        {
+            title: "AI Assistance (Coming Soon)",
+            desc: "AI-powered flashcard suggestions and smart quiz generation.",
+        },
     ];
 
     return (
         <main className="flex flex-col items-center text-gray-300 bg-black px-6 pb-20 min-h-screen">
-
-            {/*Hero Section */}
+            {/* Hero Section */}
             <section className="text-center max-w-4xl mt-28">
                 <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 leading-tight">
                     Supercharge Your Memory with{" "}
-                    <span
-                        className="text-gray-500 drop-shadow-[0_0_15px_rgba(200,200,200,0.2)]"
-                    >
+                    <span className="text-gray-500 drop-shadow-[0_0_15px_rgba(200,200,200,0.2)]">
                         Recallify
                     </span>
                 </h1>
@@ -53,29 +79,33 @@ export default function HomeBody() {
                 ))}
             </section>
 
-            {/*Explanation Section */}
-            <section className="mt-32 max-w-4xl text-center">
-                <h2 className="text-3xl font-bold mb-6 text-gray-200">What Recallify Does &amp; Future Plans</h2>
+            {/* Explanation & Dynamic Placeholder Section */}
+            <section className="mt-32 max-w-4xl text-center w-full">
+                <h2 className="text-3xl font-bold mb-6 text-gray-200">
+                    What Recallify Does & Future Plans
+                </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-left">
+                    {/* Core Features */}
                     <div className="bg-gradient-to-br from-black/80 to-gray-900/80 p-6 rounded-xl backdrop-blur-lg border border-gray-700 transition hover:scale-[1.02] duration-300 hover:shadow-gray-500/20">
                         <h3 className="text-xl font-semibold mb-2 text-gray-300">Core Features</h3>
                         <ul className="list-disc pl-5 text-gray-400 space-y-2">
-                            <li>Create, edit, and delete flashcards easily</li>
+                            <li>Create, edit, and delete flashcards</li>
                             <li>Flip animations to test yourself</li>
-                            <li>Persistent storage via LocalStorage</li>
-                            <li>Stylish and intuitive interface</li>
+                            <li>Stylish, intuitive, and dark-themed interface</li>
                         </ul>
                     </div>
+
+                    {/* Coming Soon / Dynamic Features */}
                     <div className="bg-gradient-to-br from-black/80 to-gray-900/80 p-6 rounded-xl backdrop-blur-lg border border-gray-700 transition hover:scale-[1.02] duration-300 hover:shadow-gray-500/20">
                         <h3 className="text-xl font-semibold mb-2 text-gray-300">Coming Soon</h3>
                         <ul className="list-disc pl-5 text-gray-400 space-y-2">
-                            <li>Account login and sync across devices</li>
+                            <li>Dynamic quiz generation based on your flashcards</li>
+                            <li>Streak tracking & progress graphs</li>
                             <li>AI-powered flashcard suggestions</li>
-                            <li>Notifications & reminders</li>
-                            <li>Custom themes and layouts</li>
                         </ul>
                     </div>
                 </div>
+                
             </section>
         </main>
     );

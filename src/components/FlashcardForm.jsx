@@ -6,16 +6,17 @@ const FlashcardForm = () => {
     const [addQuestion, setAddQuestion] = useState("");
     const [addAnswer, setAddAnswer] = useState("");
 
-    const { addFlashcard } = useFlashcard();
+    const { addCard } = useFlashcard();
 
-    const AddFormHandler = () => {
+    const AddFormHandler = async () => {
         if (addQuestion.trim() === "" || addAnswer.trim() === "") {
             toast.error("Please fill out both fields!");
             return;
         }
 
+        await addCard(addQuestion, addAnswer);
         toast.success("Flashcard added!");
-        addFlashcard(addQuestion, addAnswer);
+
         setAddQuestion("");
         setAddAnswer("");
     };
@@ -39,6 +40,7 @@ const FlashcardForm = () => {
                 onChange={(e) => setAddAnswer(e.target.value)}
             />
             <button
+                type="button"
                 className="bg-gray-500 text-white font-semibold py-2 w-full rounded-lg hover:bg-gray-600 transition duration-200 shadow-md"
                 onClick={AddFormHandler}
             >

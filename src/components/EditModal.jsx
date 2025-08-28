@@ -1,51 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const EditModal = ({ question, answer, onClose, onSave }) => {
     const [editedQuestion, setEditedQuestion] = useState(question);
     const [editedAnswer, setEditedAnswer] = useState(answer);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (editedQuestion.trim() === "" || editedAnswer.trim() === "") return;
-        onSave(editedQuestion, editedAnswer);
-    };
+    useEffect(() => {
+        setEditedQuestion(question);
+        setEditedAnswer(answer);
+    }, [question, answer]);
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-xl p-6 w-11/12 max-w-md animate-fade-in">
-                <h3 className="text-xl font-bold mb-4 text-gray-700">Edit Flashcard</h3>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <input
-                        type="text"
-                        value={editedQuestion}
-                        onChange={(e) => setEditedQuestion(e.target.value)}
-                        placeholder="Edit question"
-                        className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                    />
-                    <input
-                        type="text"
-                        value={editedAnswer}
-                        onChange={(e) => setEditedAnswer(e.target.value)}
-                        placeholder="Edit answer"
-                        className="border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                    />
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+                <h2 className="text-xl font-semibold mb-4 text-gray-700">Edit Flashcard</h2>
 
-                    <div className="flex justify-end gap-4 mt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 rounded-md bg-gray-300 hover:bg-gray-400 transition cursor-pointer"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-800 transition cursor-pointer"
-                        >
-                            Save
-                        </button>
-                    </div>
-                </form>
+                <input
+                    type="text"
+                    value={editedQuestion}
+                    onChange={(e) => setEditedQuestion(e.target.value)}
+                    placeholder="Edit Question"
+                    className="w-full border border-gray-300 rounded-lg p-2 mb-4"
+                />
+
+                <textarea
+                    value={editedAnswer}
+                    onChange={(e) => setEditedAnswer(e.target.value)}
+                    placeholder="Edit Answer"
+                    className="w-full border border-gray-300 rounded-lg p-2 mb-4"
+                    rows={4}
+                />
+
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => onSave(editedQuestion, editedAnswer)}
+                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                    >
+                        Save
+                    </button>
+                </div>
             </div>
         </div>
     );

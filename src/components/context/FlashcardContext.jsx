@@ -1,12 +1,17 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import {
+  getFlashcards,
+  addFlashcard as firebaseAddFlashcard,
+  deleteFlashcard as firebaseDeleteFlashcard,
+  editFlashcard as firebaseEditFlashcard,
+} from "../firebase/firebase";
+import { AuthContext } from "./AuthContext";
 
 const FlashcardContext = createContext();
 
 export const FlashcardProvider = ({ children }) => {
-  const [flashcards, setFlashcards] = useState(() => {
-    const saved = localStorage.getItem("flashcards");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const { user } = useContext(AuthContext);
+  const [flashcards, setFlashcards] = useState([]);
 
   const [dummyData, setDummyData] = useState([
     {
@@ -97,30 +102,42 @@ export const FlashcardProvider = ({ children }) => {
   ]);
 
   useEffect(() => {
-    localStorage.setItem("flashcards", JSON.stringify(flashcards));
-  }, [flashcards]);
+    const fetchData = async () => {
+      if (user?.localId && user?.idToken) {
+        const data = await getFlashcards(user.localId, user.idToken);
+        if (data) {
+          const formatted = Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }));
+          setFlashcards(formatted);
+        } else {
+          setFlashcards([]);
+        }
+      }
+    };
+    fetchData();
+  }, [user]);
 
-  // ✅ Add Flashcard
-  const addFlashcard = (question, answer) => {
-    setFlashcards((prev) => [
-      ...prev,
-      { id: Date.now(), question, answer },
-    ]);
+  const addCard = async (question, answer) => {
+    if (!user) return;
+    const newCard = { question, answer };
+    const res = await firebaseAddFlashcard(user.localId, user.idToken, newCard);
+    setFlashcards((prev) => [...prev, { id: res.name, ...newCard }]);
   };
 
-  // ✅ Delete Flashcard
-  const deleteFlashcard = (id) => {
-    setFlashcards((prev) => prev.filter((card) => card.id !== id));
+  const deleteCard = async (id) => {
+    if (!user) return;
+    await firebaseDeleteFlashcard(user.localId, user.idToken, id);
+    setFlashcards((prev) => prev.filter((c) => c.id !== id));
   };
 
-  // ✅ Edit Flashcard
-  const editFlashcard = (id, updatedQuestion, updatedAnswer) => {
+  const editCard = async (id, question, answer) => {
+    if (!user) return;
+    const updated = { question, answer };
+    await firebaseEditFlashcard(user.localId, user.idToken, id, updated);
     setFlashcards((prev) =>
-      prev.map((card) =>
-        card.id === id
-          ? { ...card, question: updatedQuestion, answer: updatedAnswer }
-          : card
-      )
+      prev.map((c) => (c.id === id ? { ...c, ...updated } : c))
     );
   };
 
@@ -128,9 +145,9 @@ export const FlashcardProvider = ({ children }) => {
     <FlashcardContext.Provider
       value={{
         flashcards,
-        addFlashcard,
-        deleteFlashcard,
-        editFlashcard,
+        addCard,
+        deleteCard,
+        editCard,
         dummyData,
         setDummyData,
       }}

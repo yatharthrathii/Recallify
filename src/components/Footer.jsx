@@ -17,7 +17,7 @@ const Footer = () => {
                 {/* Social Links */}
                 <div className="flex space-x-6 text-2xl">
                     <a
-                        href="https://www.linkedin.com/in/yatharthrathii" // Change to your actual LinkedIn URL
+                        href="https://www.linkedin.com/in/yatharthrathii"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="LinkedIn"
@@ -26,7 +26,7 @@ const Footer = () => {
                         <FaLinkedin />
                     </a>
                     <a
-                        href="https://www.instagram.com/yatharthrathii/#" // Change to your actual Instagram URL
+                        href="https://www.instagram.com/yatharthrathii" 
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Instagram"
@@ -35,7 +35,7 @@ const Footer = () => {
                         <FaInstagram />
                     </a>
                     <a
-                        href="https://x.com/yatharthrathiii?t=_HYFcs11Ml-xpPY1XeyC_Q&s=09" // Change to your actual X/Twitter URL
+                        href="https://x.com/yatharthrathiii" 
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="X Twitter"
@@ -44,11 +44,11 @@ const Footer = () => {
                         <FaTwitter />
                     </a>
                     <a
-                        href="https://github.com/yatharthrathii/yatharthrathii" // Change to your actual GitHub URL
+                        href="https://github.com/yatharthrathii" 
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="GitHub"
-                        className="hover:text-gray-400 transition"
+                        className="hover:text-gray-600 transition"
                     >
                         <FaGithub />
                     </a>

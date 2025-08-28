@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { AuthContext } from "./context/AuthContext";
 
 const Navbar = () => {
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
+    const { user, logoutUser } = useContext(AuthContext);
 
     const navItems = [
         { name: "Home", path: "/" },
@@ -43,6 +45,34 @@ const Navbar = () => {
                             ></span>
                         </Link>
                     ))}
+
+                    {/* Auth Link */}
+                    {user ? (
+                        <button
+                            onClick={logoutUser}
+                            className="relative group cursor-pointer text-gray-400 hover:text-gray-200"
+                        >
+                            <span className="transition">Logout</span>
+                            <span className="absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all w-0 group-hover:w-full"></span>
+                        </button>
+                    ) : (
+                        <Link
+                            to="/login"
+                            className={`relative group cursor-pointer ${isActive("/login") ? "text-gray-100" : "text-gray-400"
+                                }`}
+                        >
+                            <span
+                                className={`transition ${isActive("/login") ? "text-gray-100" : "group-hover:text-gray-200"
+                                    }`}
+                            >
+                                Login
+                            </span>
+                            <span
+                                className={`absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all ${isActive("/login") ? "w-full" : "w-0 group-hover:w-full"
+                                    }`}
+                            ></span>
+                        </Link>
+                    )}
                 </div>
 
                 {/* Hamburger Icon */}
@@ -68,6 +98,28 @@ const Navbar = () => {
                             {item.name}
                         </Link>
                     ))}
+
+                    {/* Auth in Mobile */}
+                    {user ? (
+                        <button
+                            onClick={() => {
+                                logoutUser();
+                                setMenuOpen(false);
+                            }}
+                            className="transition cursor-pointer hover:text-gray-200 text-left text-gray-400"
+                        >
+                            Logout
+                        </button>
+                    ) : (
+                        <Link
+                            to="/login"
+                            onClick={() => setMenuOpen(false)}
+                            className={`transition cursor-pointer ${isActive("/login") ? "text-gray-100" : "hover:text-gray-200"
+                                }`}
+                        >
+                            Login
+                        </Link>
+                    )}
                 </div>
             )}
         </nav>
