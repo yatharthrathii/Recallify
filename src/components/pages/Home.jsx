@@ -29,14 +29,14 @@ export default function HomeBody() {
             desc: "Optimized to load quickly and run smoothly on any device.",
         },
         {
+            title: "AI Assistance",
+            desc: "AI-powered flashcard creation and smart quiz generation.",
+        },
+        {
             title: "Dynamic Quiz (Coming Soon)",
             desc: flashcards.length
                 ? `Auto-generated quizzes based on your ${flashcards.length} flashcards.`
                 : "Default quiz included. More quizzes will appear as you add cards.",
-        },
-        {
-            title: "AI Assistance (Coming Soon)",
-            desc: "AI-powered flashcard suggestions and smart quiz generation.",
         },
     ];
 
@@ -89,9 +89,11 @@ export default function HomeBody() {
                     <div className="bg-gradient-to-br from-black/80 to-gray-900/80 p-6 rounded-xl backdrop-blur-lg border border-gray-700 transition hover:scale-[1.02] duration-300 hover:shadow-gray-500/20">
                         <h3 className="text-xl font-semibold mb-2 text-gray-300">Core Features</h3>
                         <ul className="list-disc pl-5 text-gray-400 space-y-2">
-                            <li>Create, edit, and delete flashcards</li>
-                            <li>Flip animations to test yourself</li>
-                            <li>Stylish, intuitive, and dark-themed interface</li>
+                            <li>Secure login & guest access</li>
+                            <li>AI-powered flashcard creation</li>
+                            <li>Dynamic quiz generation with AI</li>
+                            <li>Track streaks, XP & last login</li>
+                            <li>Badges & milestone achievements</li>
                         </ul>
                     </div>
 
@@ -99,13 +101,15 @@ export default function HomeBody() {
                     <div className="bg-gradient-to-br from-black/80 to-gray-900/80 p-6 rounded-xl backdrop-blur-lg border border-gray-700 transition hover:scale-[1.02] duration-300 hover:shadow-gray-500/20">
                         <h3 className="text-xl font-semibold mb-2 text-gray-300">Coming Soon</h3>
                         <ul className="list-disc pl-5 text-gray-400 space-y-2">
-                            <li>Dynamic quiz generation based on your flashcards</li>
-                            <li>Streak tracking & progress graphs</li>
-                            <li>AI-powered flashcard suggestions</li>
+                            <li>Leaderboard & competitive challenges</li>
+                            <li>Smarter spaced repetition algorithm</li>
+                            <li>Personalized learning paths with AI</li>
+                            <li>Community shared flashcard decks</li>
+                            <li>Mobile app for iOS & Android</li>
                         </ul>
                     </div>
                 </div>
-                
+
             </section>
         </main>
     );

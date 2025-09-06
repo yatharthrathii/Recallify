@@ -12,6 +12,7 @@ import Login from "./components/pages/Login";
 import Signup from "./components/pages/Signup";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import Profile from "./components/pages/Profile";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
 
               {/* Protected Routes */}
               <Route path="/create" element={<ProtectedRoute><Create /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/quiz" element={<ProtectedRoute><Quiz /></ProtectedRoute>} />
             </Routes>
           </div>

@@ -26,7 +26,7 @@ const Footer = () => {
                         <FaLinkedin />
                     </a>
                     <a
-                        href="https://www.instagram.com/yatharthrathii" 
+                        href="https://www.instagram.com/yatharthrathii"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="Instagram"
@@ -35,7 +35,7 @@ const Footer = () => {
                         <FaInstagram />
                     </a>
                     <a
-                        href="https://x.com/yatharthrathiii" 
+                        href="https://x.com/yatharthrathiii"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="X Twitter"
@@ -44,7 +44,7 @@ const Footer = () => {
                         <FaTwitter />
                     </a>
                     <a
-                        href="https://github.com/yatharthrathii" 
+                        href="https://github.com/yatharthrathii"
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="GitHub"

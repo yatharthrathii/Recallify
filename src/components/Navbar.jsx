@@ -1,12 +1,36 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { AuthContext } from "./context/AuthContext";
 
 const Navbar = () => {
     const [menuOpen, setMenuOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
     const location = useLocation();
-    const { user, logoutUser } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
+
+    const profileRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                profileRef.current &&
+                !profileRef.current.contains(event.target)
+            ) {
+                setProfileOpen(false);
+            }
+        };
+
+        if (profileOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        } else {
+            document.removeEventListener("mousedown", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [profileOpen]);
 
     const navItems = [
         { name: "Home", path: "/" },
@@ -34,44 +58,79 @@ const Navbar = () => {
                                 }`}
                         >
                             <span
-                                className={`transition ${isActive(item.path) ? "text-gray-100" : "group-hover:text-gray-200"
+                                className={`transition ${isActive(item.path)
+                                    ? "text-gray-100"
+                                    : "group-hover:text-gray-200"
                                     }`}
                             >
                                 {item.name}
                             </span>
                             <span
-                                className={`absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all ${isActive(item.path) ? "w-full" : "w-0 group-hover:w-full"
+                                className={`absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all ${isActive(item.path)
+                                    ? "w-full"
+                                    : "w-0 group-hover:w-full"
                                     }`}
                             ></span>
                         </Link>
                     ))}
 
-                    {/* Auth Link */}
-                    {user ? (
-                        <button
-                            onClick={logoutUser}
-                            className="relative group cursor-pointer text-gray-400 hover:text-gray-200"
-                        >
-                            <span className="transition">Logout</span>
-                            <span className="absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all w-0 group-hover:w-full"></span>
-                        </button>
-                    ) : (
+                    {/* Auth Links */}
+                    {!user ? (
                         <Link
                             to="/login"
                             className={`relative group cursor-pointer ${isActive("/login") ? "text-gray-100" : "text-gray-400"
                                 }`}
                         >
                             <span
-                                className={`transition ${isActive("/login") ? "text-gray-100" : "group-hover:text-gray-200"
+                                className={`transition ${isActive("/login")
+                                    ? "text-gray-100"
+                                    : "group-hover:text-gray-200"
                                     }`}
                             >
                                 Login
                             </span>
                             <span
-                                className={`absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all ${isActive("/login") ? "w-full" : "w-0 group-hover:w-full"
+                                className={`absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all ${isActive("/login")
+                                    ? "w-full"
+                                    : "w-0 group-hover:w-full"
                                     }`}
                             ></span>
                         </Link>
+                    ) : (
+                        <div className="relative" ref={profileRef}>
+                            <button
+                                onClick={() => setProfileOpen(!profileOpen)}
+                                className="relative group cursor-pointer text-gray-400 hover:text-gray-200"
+                            >
+                                Profile
+                                <span
+                                    className={`absolute left-0 -bottom-1 h-0.5 bg-gray-300 transition-all ${profileOpen ? "w-full" : "w-0 group-hover:w-full"
+                                        }`}
+                                ></span>
+                            </button>
+
+                            {profileOpen && (
+                                <div className="absolute text-sm right-0 mt-3 w-40 bg-gradient-to-b from-gray-800 to-gray-700 text-gray-200 rounded-lg shadow-lg border border-gray-700 py-2">
+                                    <Link
+                                        to="/profile"
+                                        className="block px-4 py-2 hover:bg-gray-700 rounded-md"
+                                        onClick={() => setProfileOpen(false)}
+                                    >
+                                        My Profile
+                                    </Link>
+                                    <div className="h-px bg-gray-600 my-2"></div>
+                                    <button
+                                        onClick={() => {
+                                            logout();
+                                            setProfileOpen(false);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 cursor-pointer hover:bg-gray-700 rounded-md"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -92,7 +151,9 @@ const Navbar = () => {
                             key={item.name}
                             to={item.path}
                             onClick={() => setMenuOpen(false)}
-                            className={`transition cursor-pointer ${isActive(item.path) ? "text-gray-100" : "hover:text-gray-200"
+                            className={`transition cursor-pointer ${isActive(item.path)
+                                ? "text-gray-100"
+                                : "hover:text-gray-200"
                                 }`}
                         >
                             {item.name}
@@ -100,25 +161,36 @@ const Navbar = () => {
                     ))}
 
                     {/* Auth in Mobile */}
-                    {user ? (
-                        <button
-                            onClick={() => {
-                                logoutUser();
-                                setMenuOpen(false);
-                            }}
-                            className="transition cursor-pointer hover:text-gray-200 text-left text-gray-400"
-                        >
-                            Logout
-                        </button>
-                    ) : (
+                    {!user ? (
                         <Link
                             to="/login"
                             onClick={() => setMenuOpen(false)}
-                            className={`transition cursor-pointer ${isActive("/login") ? "text-gray-100" : "hover:text-gray-200"
+                            className={`transition cursor-pointer ${isActive("/login")
+                                ? "text-gray-100"
+                                : "hover:text-gray-200"
                                 }`}
                         >
                             Login
                         </Link>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <Link
+                                to="/profile"
+                                onClick={() => setMenuOpen(false)}
+                                className="transition cursor-pointer hover:text-gray-200 text-gray-400"
+                            >
+                                My Profile
+                            </Link>
+                            <button
+                                onClick={() => {
+                                    logout();
+                                    setMenuOpen(false);
+                                }}
+                                className="transition cursor-pointer hover:text-gray-200 text-left text-gray-400"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     )}
                 </div>
             )}

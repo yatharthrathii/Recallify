@@ -1,13 +1,12 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../firebase/firebase";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { loginUser } = useContext(AuthContext);
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
@@ -17,7 +16,6 @@ export default function Login() {
     if (res.error) {
       toast.error(res.error.message);
     } else {
-      loginUser(res);
       toast.success("Login successful");
       navigate("/");
     }
@@ -29,12 +27,12 @@ export default function Login() {
       if (res.error) {
         toast.error("Guest login failed");
       } else {
-        loginUser(res);
         toast.success("Logged in as Guest");
         navigate("/");
       }
     } catch (error) {
-      toast.error("Something went wrong with guest login", error);
+      toast.error("Something went wrong with guest login");
+      console.log(error)
     }
   };
 
@@ -63,13 +61,12 @@ export default function Login() {
           />
           <button
             type="submit"
-            className="w-full p-3 rounded-lg bg-gradient-to-r from-gray-800 to-gray-700 text-white font-semibold tracking-wide cursor-pointer hover:from-gray-700 hover:to-gray-600 transition-all shadow-md"
+            className="w-full p-3 rounded-lg bg-gradient-to-r from-gray-800 to-gray-700 text-white font-semibold tracking-wide hover:from-gray-700 hover:to-gray-600 transition-all shadow-md"
           >
             Login
           </button>
         </form>
 
-        {/* Forgot Password Link */}
         <div className="mt-6 space-y-3">
           <p className="text-sm text-gray-400 mt-6">
             Don't have an account?{" "}
@@ -81,7 +78,6 @@ export default function Login() {
             </Link>
           </p>
 
-          {/* Login as Guest */}
           <button
             onClick={handleGuestLogin}
             className="text-sm text-gray-400 hover:text-gray-200 transition cursor-pointer"

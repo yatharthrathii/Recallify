@@ -103,8 +103,8 @@ export const FlashcardProvider = ({ children }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (user?.localId && user?.idToken) {
-        const data = await getFlashcards(user.localId, user.idToken);
+      if (user?.id && user?.token) {
+        const data = await getFlashcards(user.id, user.token);
         if (data) {
           const formatted = Object.keys(data).map((key) => ({
             id: key,
@@ -119,23 +119,29 @@ export const FlashcardProvider = ({ children }) => {
     fetchData();
   }, [user]);
 
+  // Add card
   const addCard = async (question, answer) => {
-    if (!user) return;
+    if (!user?.id || !user?.token) {
+      console.error("User ID ya token missing hai!");
+      return;
+    }
     const newCard = { question, answer };
-    const res = await firebaseAddFlashcard(user.localId, user.idToken, newCard);
+    const res = await firebaseAddFlashcard(user.id, user.token, newCard);
     setFlashcards((prev) => [...prev, { id: res.name, ...newCard }]);
   };
 
+  // Delete card
   const deleteCard = async (id) => {
-    if (!user) return;
-    await firebaseDeleteFlashcard(user.localId, user.idToken, id);
+    if (!user?.id || !user?.token) return;
+    await firebaseDeleteFlashcard(user.id, user.token, id);
     setFlashcards((prev) => prev.filter((c) => c.id !== id));
   };
 
+  // Edit card
   const editCard = async (id, question, answer) => {
-    if (!user) return;
+    if (!user?.id || !user?.token) return;
     const updated = { question, answer };
-    await firebaseEditFlashcard(user.localId, user.idToken, id, updated);
+    await firebaseEditFlashcard(user.id, user.token, id, updated);
     setFlashcards((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...updated } : c))
     );

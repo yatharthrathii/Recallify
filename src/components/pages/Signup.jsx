@@ -1,22 +1,21 @@
-import { useState, useContext } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { signup } from "../firebase/firebase";
-import { AuthContext } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { loginUser } = useContext(AuthContext);
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSignup = async (e) => {
     e.preventDefault();
     const res = await signup(email, password);
+
     if (res.error) {
       toast.error(res.error.message);
     } else {
-      loginUser(res);
       toast.success("Account created");
       navigate("/");
     }
@@ -47,7 +46,7 @@ export default function Signup() {
           />
           <button
             type="submit"
-            className="w-full p-3 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold tracking-wide hover:from-gray-600 hover:to-gray-500 transition-all shadow-md cursor-pointer"
+            className="w-full p-3 rounded-lg bg-gradient-to-r from-gray-700 to-gray-600 text-white font-semibold tracking-wide hover:from-gray-600 hover:to-gray-500 transition-all shadow-md"
           >
             Signup
           </button>

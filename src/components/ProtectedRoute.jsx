@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useEffect } from "react";
 import { Navigate } from "react-router";
 import { AuthContext } from "./context/AuthContext";
 import { toast } from "react-hot-toast";
@@ -6,12 +6,17 @@ import { toast } from "react-hot-toast";
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      toast.error("Please login first!");
+    }
+  }, [loading, user]);
+
   if (loading) {
-    return null; 
+    return null; // ya ek Loader dikhade
   }
 
   if (!user) {
-    toast.error("Please login first!");
     return <Navigate to="/login" replace />;
   }
 

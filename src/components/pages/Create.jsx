@@ -4,7 +4,9 @@ import FlashcardList from "../FlashcardList";
 const Create = () => {
     return (
         <div className="mt-24">
-            <FlashcardForm />
+            <div className="px-2">
+                <FlashcardForm/>
+            </div>
             <FlashcardList />
         </div>
     );
