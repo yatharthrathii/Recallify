@@ -5,7 +5,7 @@ Welcome to **Recallify** — a modern, sleek, and intelligent flashcard app buil
 ---
 
 ## 🚀 Live Demo
-[🔗 View Live Project](https://recallify-ashen.vercel.app)
+[🔗 View Live Project](https://recallify-fawn.vercel.app)
 
 ---
 
