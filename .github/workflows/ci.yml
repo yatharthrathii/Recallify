@@ -31,7 +31,7 @@ jobs:
       - run: pnpm --filter @recallify/api db:generate
       # Zero warnings. v1 shipped a failing lint for months because nothing
       # checked it -- see docs/05-ENGINEERING.md.
-      - run: pnpm lint -- --max-warnings=0
+      - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
 

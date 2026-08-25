@@ -9,7 +9,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=0",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:fsrs": "pnpm --filter @recallify/fsrs test",
