@@ -1,0 +1,47 @@
+# One command brings the whole stack up:  pnpm up
+#
+# Local Postgres is deliberately separate from the Neon instance used in
+# production. v1 pointed local and production at one Firebase project, which is
+# why cards created on localhost appeared on the live site.
+
+name: recallify
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: recallify
+      POSTGRES_PASSWORD: recallify
+      POSTGRES_DB: recallify
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U recallify -d recallify']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://recallify:recallify@postgres:5432/recallify?schema=public
+      NODE_ENV: production
+      API_PORT: '3001'
+      WEB_URL: http://localhost:3000
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-only-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-only-change-me}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    ports:
+      - '3001:3001'
+
+volumes:
+  pgdata:

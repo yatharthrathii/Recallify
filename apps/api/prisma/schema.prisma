@@ -1,0 +1,190 @@
+// Recallify v2 schema. See docs/03-DATA-AND-API.md for the reasoning.
+//
+// Two invariants govern this file:
+//   1. Review is append-only. It is the event log the forgetting curve, the
+//      optimizer and the backtest are all derived from. Never update, never
+//      delete. Card FSRS state is a cache of replaying it.
+//   2. Every user-owned row carries userId so the due-queue query can filter on
+//      it directly. Ownership is enforced in the WHERE clause, never after.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // FSRS personalisation. Empty fsrsParams means "use published defaults".
+  fsrsParams        Float[]
+  desiredRetention  Float     @default(0.90)
+  dailyNewLimit     Int       @default(20)
+  dailyReviewLimit  Int       @default(200)
+  paramsOptimizedAt DateTime?
+
+  isDemo Boolean @default(false)
+
+  decks         Deck[]
+  cards         Card[]
+  reviews       Review[]
+  refreshTokens RefreshToken[]
+  stats         UserStats?
+  aiUsage       AiUsage[]
+
+  @@map("users")
+}
+
+// Rotating refresh tokens with reuse detection. If a revoked token is presented
+// again, every token sharing its familyId is revoked: a stolen token cannot
+// outlive the legitimate session.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique // SHA-256. The raw token is never stored.
+  familyId  String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model Deck {
+  id          String    @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  color       String    @default("amber")
+  isPublic    Boolean   @default(false)
+  archivedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@index([userId, archivedAt])
+  @@map("decks")
+}
+
+enum CardState {
+  NEW
+  LEARNING
+  REVIEW
+  RELEARNING
+}
+
+enum CardSource {
+  MANUAL
+  AI
+  IMPORT
+}
+
+model Card {
+  id     String     @id @default(cuid())
+  deckId String
+  userId String // denormalised: every due-queue query filters on it
+  front  String
+  back   String
+  hint   String?
+  source CardSource @default(MANUAL)
+
+  // FSRS state. Derived from the Review log, cached here so the due query is
+  // a single indexed read instead of a replay.
+  state          CardState @default(NEW)
+  stability      Float     @default(0)
+  difficulty     Float     @default(0)
+  dueAt          DateTime  @default(now())
+  reps           Int       @default(0)
+  lapses         Int       @default(0)
+  lastReviewedAt DateTime?
+  suspendedAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck    Deck     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviews Review[]
+
+  @@index([userId, dueAt]) // THE due-queue query
+  @@index([deckId, dueAt])
+  @@index([userId, state])
+  @@map("cards")
+}
+
+// Append-only. The id is generated on the client, which makes it the
+// idempotency key: a retried offline sync cannot double-count a review.
+model Review {
+  id     String @id
+  cardId String
+  userId String
+  rating Int // 1 Again - 2 Hard - 3 Good - 4 Easy
+
+  // State BEFORE this review, so the log is replayable on its own.
+  prevState      CardState
+  prevStability  Float
+  prevDifficulty Float
+
+  newStability   Float
+  newDifficulty  Float
+  scheduledDays  Int
+  elapsedDays    Int
+  retrievability Float // predicted R at the moment of review
+  durationMs     Int?
+
+  reviewedAt DateTime // client clock: when it actually happened
+  syncedAt   DateTime @default(now()) // server clock: when it arrived
+
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, reviewedAt])
+  @@index([cardId, reviewedAt])
+  @@map("reviews")
+}
+
+// xp is cumulative and level is derived from it. v1 did `xp = xp % 100`, which
+// silently destroyed the running total every time a user crossed 100.
+model UserStats {
+  userId        String    @id
+  xp            Int       @default(0)
+  level         Int       @default(1)
+  streak        Int       @default(0)
+  longestStreak Int       @default(0)
+  lastStudyDate DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_stats")
+}
+
+model AiUsage {
+  id           String   @id @default(cuid())
+  userId       String
+  promptTokens Int
+  outputTokens Int
+  cardsCreated Int
+  model        String
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt]) // rate-limit window query
+  @@map("ai_usage")
+}

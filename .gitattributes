@@ -1,0 +1,14 @@
+# Normalise line endings. Windows locally, Linux in CI and in the API image --
+# without this every file shows as fully modified when the two meet.
+* text=auto eol=lf
+
+# Binary: never touch.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff  binary
+*.woff2 binary
+*.pdf binary
+
+# Generated: collapse in PR diffs.
+pnpm-lock.yaml linguist-generated=true -diff
