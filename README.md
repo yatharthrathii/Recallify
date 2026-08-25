@@ -1,83 +1,106 @@
-# 🧠 Recallify - AI-Powered Flashcard App
+# Recallify
 
-Welcome to **Recallify** — a modern, sleek, and intelligent flashcard app built with **React.js**. Designed for students, professionals, and lifelong learners, Recallify helps you **retain knowledge efficiently** using smart repetition and gamified learning.
+A flashcard web app with quiz mode and gamified progress tracking.
 
----
+**Live:** https://recallify-fawn.vercel.app
 
-## 🚀 Live Demo
-[🔗 View Live Project](https://recallify-fawn.vercel.app)
-
----
-
-## ✨ Features
-
-- ✅ **Create / Edit / Delete Flashcards** — Clean & minimal form to manage your cards.
-- 🔁 **Flip Card Animations** — Practice recalling answers interactively.
-- 📊 **Progress Chart** — Track how much you’ve learned using a responsive chart.
-- 🧪 **Quiz Mode** — Test your flashcard knowledge with a MCQ-based quiz.
-- 💾 **LocalStorage Support** — All your data is saved even after refresh, offline first.
-- 📱 **Responsive UI** — Mobile and desktop-friendly with smooth transitions.
-- 🧭 **Smart Navbar** — Highlights current page with animated link effects.
-- 🌌 **Dark Mode Design** — Sleek glassmorphism + dark theme only.
+> **Note on v2.** This is v1. A rewrite is in progress that replaces Firebase with
+> a NestJS + PostgreSQL backend and implements FSRS spaced-repetition scheduling.
+> An earlier version of this README described features this code does not have —
+> see [Corrections](#corrections) below. The rewrite exists to make the
+> description and the code match.
 
 ---
 
-## 📸 Screenshots
+## What it actually does
 
-| Home Page |
+- Email/password auth via Firebase Identity Toolkit (called over REST)
+- Create, edit, and delete flashcards (`front` / `back` text)
+- Cards are stored per user in Firebase Realtime Database
+- Quiz mode: multiple-choice questions generated on demand by an LLM from a
+  topic you type
+- XP, level, streak and badges, with a bar chart of recent XP
+- Protected routes; dark UI
 
-<img width="1919" height="859" alt="Screenshot 2025-08-08 143043" src="https://github.com/user-attachments/assets/81ae3a84-d3a7-4aa8-9764-6406249df618" />
+## What it does not do
 
+Stated plainly, because a previous version of this file claimed otherwise:
 
-| Flashcard Create |
+- **No spaced repetition.** There is no scheduling algorithm, no interval, no
+  ease factor, and no due date anywhere in this codebase. A card is
+  `{ question, answer }`.
+- **Quiz does not use your own cards.** Quiz questions come either from a
+  hardcoded sample array or from the LLM. Your saved flashcards are not part of
+  the quiz.
+- **No OpenAI.** Generation goes through OpenRouter using a free DeepSeek model.
 
-<img width="1919" height="871" alt="Screenshot 2025-08-08 143216" src="https://github.com/user-attachments/assets/efface94-30be-4182-8ba9-c7b5e032b2a5" />
+## Tech stack
 
-<img width="1919" height="868" alt="Screenshot 2025-08-08 143146" src="https://github.com/user-attachments/assets/417a98f8-148c-4bed-92ea-398af10e4aa8" />
+| | |
+|---|---|
+| Framework | React 19 + Vite 6 |
+| Styling | Tailwind CSS v4, Radix primitives |
+| Routing | React Router 7 |
+| State | React Context API (`AuthContext`, `FlashcardContext`, `StatsContext`) |
+| Storage | Firebase Realtime Database, over the REST API (no Firebase SDK for data) |
+| Auth | Firebase Identity Toolkit, over REST |
+| AI | OpenRouter (`deepseek/deepseek-chat-v3.1:free`) |
+| Charts | Recharts, plus a hand-built bar chart |
+| Deploy | Vercel |
 
-
-| Quiz Mode |
-
-<img width="1919" height="866" alt="Screenshot 2025-08-08 143237" src="https://github.com/user-attachments/assets/d18d228a-7959-42bd-8b62-47e2dea53934" />
-
-
-|  Progress Chart |
-
-<img width="1919" height="865" alt="Screenshot 2025-08-08 143250" src="https://github.com/user-attachments/assets/9d9c458f-862d-428d-8aa5-ccf101153a36" />
-
-
-
-## 🔧 Tech Stack
-
-- **Frontend**: React.js + TailwindCSS
-- **Routing**: React Router DOM
-- **State**: useState, useEffect (local state)
-- **Icons**: Lucide React Icons
-- **Charting**: Recharts
-- **Storage**: `localStorage`
-
----
-
-## 📁 Folder Structure
+## Running locally
 
 ```bash
-src/
-│
-├── components/
-│   ├── Navbar.jsx
-│   ├── FlashcardForm.jsx
-│   ├── FlashcardList.jsx
-│   ├── Quiz.jsx
-│   ├── ProgressChart.jsx
-│   └── ...
-│
-├── pages/
-│   ├── Home.jsx
-│   ├── Create.jsx
-│   ├── QuizPage.jsx
-│   └── ...
-│
-├── App.jsx
-├── main.jsx
-└── index.css
+npm install
+cp .env.example .env    # fill in your own Firebase project values
+npm run dev
+```
 
+Requires a Firebase project with Realtime Database enabled. Database rules must
+restrict reads and writes to the authenticated owner:
+
+```json
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read":  "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}
+```
+
+## Known issues
+
+These are fixed by design in v2 rather than patched here.
+
+| Issue | Location |
+|---|---|
+| The AI key is a `VITE_` variable, so it is bundled into the client and publicly readable | `FlashcardForm.jsx`, `Quiz.jsx` |
+| `newXP = newXP % 100` discards total XP once past 100 | `StatsContext.jsx` |
+| Daily XP history is overwritten rather than accumulated, so the chart is wrong | `StatsContext.jsx`, `firebase.js` |
+| The Firebase ID token is never refreshed, so the session silently breaks after 1 hour | `AuthContext.jsx` |
+| `handleUsernameSave` calls `login(userObject)` but `login` takes `(email, password)`, so saving a username has never worked | `Profile.jsx` |
+| Quiz runs on a hardcoded sample array, not the user's cards | `FlashcardContext.jsx` |
+| `npm run lint` reports 1 error and 6 warnings | — |
+| Local development and production share one Firebase project, so local data appears on the live site | `.env` |
+
+## Corrections
+
+A previous version of this README stated:
+
+| Claimed | Actual |
+|---|---|
+| "AI-Powered" using the OpenAI API | OpenRouter with a free DeepSeek model; no OpenAI |
+| Spaced repetition / "smart repetition" | Not implemented at all |
+| Storage: `localStorage`, "offline first" | Firebase Realtime Database; requires a network |
+| State: `useState`, `useEffect` | React Context API |
+
+These have been corrected. The AI claim is now specific about what is used, and
+the spaced-repetition claim has been removed until the code supports it.
+
+## License
+
+MIT
