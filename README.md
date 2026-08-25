@@ -1,5 +1,7 @@
 # Recallify
 
+[![CI](https://github.com/yatharthrathii/Recallify/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/yatharthrathii/Recallify/actions/workflows/ci.yml)
+
 A spaced-repetition scheduler built on FSRS, with the algorithm made visible.
 
 Every serious flashcard app hides its scheduler. Anki has run FSRS by default
