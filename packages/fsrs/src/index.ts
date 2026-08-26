@@ -26,13 +26,10 @@ export {
   nextShortTermStability,
 } from './memory';
 
-/**
- * Phase 2b adds the state machine on top of this memory model:
- *
- *   schedule(card, rating, now, config) -> SchedulingResult
- *   explain(card, now, config)          -> Explanation
- *   replay(logs, config)                -> SchedulingCard
- *
- * The model above is the hard part and is pinned by differential tests; the
- * state machine is learning steps, graduation and interval fuzz around it.
- */
+export {
+  schedule,
+  explain,
+  replay,
+  fuzzInterval,
+  nextLearningStep,
+} from './scheduler';

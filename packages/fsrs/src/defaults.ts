@@ -10,6 +10,7 @@ export function newCard(now: Date): SchedulingCard {
     lapses: 0,
     lastReviewedAt: null,
     dueAt: now,
+    learningStep: 0,
   };
 }
 

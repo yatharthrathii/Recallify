@@ -114,6 +114,12 @@ model Card {
   lastReviewedAt DateTime?
   suspendedAt    DateTime?
 
+  // Which rung of the learning ladder the card is on, while it is in LEARNING
+  // or RELEARNING. Without it a learning card is ambiguous: "answered Again,
+  // back to 1 minute" and "answered Good once, now at 10 minutes" would look
+  // identical. Meaningless in NEW and REVIEW, where it stays 0.
+  learningStep   Int       @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

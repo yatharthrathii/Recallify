@@ -10,9 +10,9 @@ the scheduler is the interesting part, so it surfaces the memory model instead o
 hiding it: the forgetting curve per card, why a given card is due right now, and
 what your own review history says about the default parameters.
 
-> **Status: phase 2 of 7, in progress.** The workspace builds, the schema is
-> defined, CI is green, and the FSRS memory model is implemented and verified
-> against the reference implementation. There is no API and no UI yet. This
+> **Status: phase 2 of 7 complete.** The scheduler works end to end: memory
+> model, state machine, and replay, verified against the reference
+> implementation. There is no API, no database and no UI yet. This
 > README will not claim a feature before the code does it — the
 > [v1 rewrite](#why-v2-exists) happened because an earlier README did exactly
 > that.
@@ -23,8 +23,7 @@ what your own review history says about the default parameters.
 |---|---|---|
 | 0 | Corrections to v1 | done |
 | 1 | Monorepo, Prisma schema, Docker, CI | done |
-| 2 | FSRS memory model + tests | done |
-| 2b | Scheduler state machine | in progress |
+| 2 | FSRS engine: memory model + scheduler | done |
 | 3 | Parameter optimizer + backtest | pending |
 | 4 | API | pending |
 | 5 | AI card generation | pending |

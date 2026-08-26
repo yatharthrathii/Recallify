@@ -71,6 +71,7 @@ CREATE TABLE "cards" (
     "lapses" INTEGER NOT NULL DEFAULT 0,
     "lastReviewedAt" TIMESTAMP(3),
     "suspendedAt" TIMESTAMP(3),
+    "learningStep" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 

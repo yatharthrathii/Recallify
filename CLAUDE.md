@@ -28,10 +28,11 @@ That history is why the honesty rules below are not negotiable.
   still live** and readable in the deployed bundle. It must be revoked at
   openrouter.ai/keys.
 - Phase 1 done. Workspace builds; lint, typecheck, tests and CI are green.
-- Phase 2a done. `packages/fsrs` implements the DSR memory model, verified
-  against ts-fsrs. 57 tests, 100% coverage.
-- **Next: phase 2b** — the scheduler state machine (`schedule`, `explain`,
-  `replay`), learning steps, graduation, interval fuzz.
+- Phase 2 done. `packages/fsrs` is complete: the DSR memory model (verified
+  against ts-fsrs) plus the scheduler state machine — `schedule`, `explain`,
+  `replay`, learning steps, graduation, lapsing, interval fuzz.
+  97 tests, 100% coverage including branches.
+- **Next: phase 3** — the parameter optimizer and backtest.
 
 ### Notes carried out of phase 2a
 
@@ -44,6 +45,13 @@ That history is why the honesty rules below are not negotiable.
   and the oracle proved it.
 - The floor of 1 on the short-term stability multiplier applies from **Hard**
   upwards, not from Good.
+- Stability is computed from the **pre-update** difficulty. Feeding the freshly
+  updated difficulty in shifts every result; confirmed against `next_state`.
+- A RELEARNING card must use `relearningSteps`, not `learningSteps`. Keying that
+  off "did this review lapse" alone leaves the card unable to ever graduate,
+  because the flag is only true on the review that broke it.
+- `SchedulingCard.learningStep` exists because a LEARNING card is otherwise
+  ambiguous; `Card.learningStep` mirrors it in the schema.
 
 ## Non-negotiables
 

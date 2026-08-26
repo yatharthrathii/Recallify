@@ -9,7 +9,7 @@ import { memory } from '@recallify/tokens';
 const phases = [
   { n: 0, name: 'Corrections to v1', done: true },
   { n: 1, name: 'Monorepo, schema, CI', done: true },
-  { n: 2, name: 'FSRS memory model + tests', done: true },
+  { n: 2, name: 'FSRS engine: model + scheduler', done: true },
   { n: 3, name: 'Parameter optimizer', done: false },
   { n: 4, name: 'API', done: false },
   { n: 5, name: 'AI generation', done: false },
@@ -44,11 +44,11 @@ export default function Page() {
       </p>
 
       <p className="mt-4 text-sm" style={{ color: 'var(--text-faint)' }}>
-        There is no API and no interface yet. What does exist is the memory
-        model: the forgetting curve, the difficulty and stability updates, and 57
-        tests holding them in place &mdash; including a differential test against
-        the reference implementation. This page will keep saying exactly what is
-        and is not built.
+        There is no API, no database and no interface yet. What does exist is the
+        scheduler: the forgetting curve, the difficulty and stability updates, the
+        learning ladder, and replay from an append-only log &mdash; held in place by
+        97 tests, including a differential test against the reference
+        implementation. This page will keep saying exactly what is and is not built.
       </p>
 
       <section className="mt-12">

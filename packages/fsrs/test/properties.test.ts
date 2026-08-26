@@ -13,6 +13,8 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PARAMS, D_MAX, D_MIN, S_MAX, S_MIN } from '../src/constants';
+import { addDays } from '../src/defaults';
+import { schedule } from '../src/scheduler';
 import {
   initialDifficulty,
   initialStability,
@@ -23,7 +25,7 @@ import {
   nextShortTermStability,
   retrievability,
 } from '../src/memory';
-import type { Rating } from '../src/types';
+import type { CardState, Rating, SchedulingCard } from '../src/types';
 
 const P = DEFAULT_PARAMS;
 const RATINGS: readonly Rating[] = [1, 2, 3, 4];
@@ -229,6 +231,127 @@ describe('stability', () => {
         const gain = nextShortTermStability(P, s, 3) / s;
         const gainWhenStronger = nextShortTermStability(P, s * 10, 3) / (s * 10);
         return gainWhenStronger <= gain + 1e-9;
+      }),
+      { numRuns: 1000 },
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scheduler invariants. These hold for any card, any rating, any moment --
+// they are the rules the state machine may never break, whatever the numbers.
+// ---------------------------------------------------------------------------
+
+const T0 = new Date('2026-01-01T09:00:00Z');
+
+/** Any card the state machine could plausibly hand us. */
+const arbCard = fc.record({
+  state: fc.constantFrom<CardState>('NEW', 'LEARNING', 'REVIEW', 'RELEARNING'),
+  stability: arbStability,
+  difficulty: arbDifficulty,
+  reps: fc.integer({ min: 0, max: 500 }),
+  lapses: fc.integer({ min: 0, max: 50 }),
+  learningStep: fc.integer({ min: 0, max: 1 }),
+  daysAgo: fc.double({ min: 0, max: 400, noNaN: true, noDefaultInfinity: true }),
+}).map(({ daysAgo, ...rest }): SchedulingCard => ({
+  ...rest,
+  lastReviewedAt: rest.state === 'NEW' ? null : addDays(T0, -daysAgo),
+  dueAt: T0,
+}));
+
+describe('scheduler invariants', () => {
+  it('always schedules the card into the future', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        const { card: next } = schedule(card, rating, T0);
+        return next.dueAt.getTime() > T0.getTime();
+      }),
+      { numRuns: 3000 },
+    );
+  });
+
+  it('counts exactly one review, every time', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        const { card: next } = schedule(card, rating, T0);
+        return next.reps === card.reps + 1 && next.lastReviewedAt?.getTime() === T0.getTime();
+      }),
+      { numRuns: 2000 },
+    );
+  });
+
+  it('never un-counts a lapse, and only adds one when review breaks', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        const { card: next } = schedule(card, rating, T0);
+        const expected = card.lapses + (card.state === 'REVIEW' && rating === 1 ? 1 : 0);
+        return next.lapses === expected;
+      }),
+      { numRuns: 3000 },
+    );
+  });
+
+  it('keeps stability and difficulty inside the model bounds', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        const { card: next } = schedule(card, rating, T0);
+        return (
+          Number.isFinite(next.stability) &&
+          next.stability >= S_MIN &&
+          next.stability <= S_MAX &&
+          next.difficulty >= D_MIN &&
+          next.difficulty <= D_MAX
+        );
+      }),
+      { numRuns: 3000 },
+    );
+  });
+
+  it('never leaves a card in NEW once it has been reviewed', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        return schedule(card, rating, T0).card.state !== 'NEW';
+      }),
+      { numRuns: 2000 },
+    );
+  });
+
+  it('writes a log that carries the state the card came from', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        const { log } = schedule(card, rating, T0);
+        return (
+          log.prevState === card.state &&
+          log.prevStability === card.stability &&
+          log.prevDifficulty === card.difficulty &&
+          log.rating === rating &&
+          log.retrievability >= 0 &&
+          log.retrievability <= 1
+        );
+      }),
+      { numRuns: 2000 },
+    );
+  });
+
+  it('never brings a card back sooner for a better answer', () => {
+    fc.assert(
+      fc.property(arbCard, (card) => {
+        const due = ([1, 2, 3, 4] as Rating[]).map(
+          (r) => schedule(card, r, T0).card.dueAt.getTime(),
+        );
+        return due.every((d, i) => i === 0 || d >= due[i - 1]! - 1);
+      }),
+      { numRuns: 3000 },
+    );
+  });
+
+  it('is a pure function — same inputs, same result, always', () => {
+    fc.assert(
+      fc.property(arbCard, arbRating, (card, rating) => {
+        return (
+          JSON.stringify(schedule(card, rating, T0)) ===
+          JSON.stringify(schedule(card, rating, T0))
+        );
       }),
       { numRuns: 1000 },
     );

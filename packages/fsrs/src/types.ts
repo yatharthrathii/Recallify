@@ -43,6 +43,15 @@ export interface SchedulingCard extends MemoryState {
   readonly lapses: number;
   readonly lastReviewedAt: Date | null;
   readonly dueAt: Date;
+  /**
+   * Which learning step the card is sitting on, while it is in LEARNING or
+   * RELEARNING. Meaningless in NEW and REVIEW, where it stays 0.
+   *
+   * Without this a card in LEARNING is ambiguous: there is no way to tell
+   * "answered Again, back to 1 minute" from "answered Good once, now at 10
+   * minutes". Anki stores the same thing.
+   */
+  readonly learningStep: number;
 }
 
 /** What a review produced. Persisted as one append-only `Review` row. */
