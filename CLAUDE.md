@@ -32,7 +32,27 @@ That history is why the honesty rules below are not negotiable.
   against ts-fsrs) plus the scheduler state machine — `schedule`, `explain`,
   `replay`, learning steps, graduation, lapsing, interval fuzz.
   97 tests, 100% coverage including branches.
-- **Next: phase 3** — the parameter optimizer and backtest.
+- Phase 3 done. `packages/optimizer` fits FSRS parameters to a user's own
+  review log and backtests the result. 47 tests, 100% coverage.
+- **Next: phase 4** — the API.
+
+### Notes carried out of phase 3
+
+- The optimizer is a **separate package** from `fsrs` on purpose: it is
+  server-only, and the browser must never pull gradient descent into its bundle.
+- Training refuses below `MIN_REVIEWS` (400). Below that the fit follows noise
+  and does worse than the published defaults. Returning noise would be worse
+  than returning nothing.
+- Parameter bounds were derived by probing `clipParameters`, not read from the
+  exported table — reading it directly gave `[0, 0.1542]` for w[17], which
+  cannot be right when the published default is 0.5425.
+- `evaluate` must NOT read the stability/difficulty stored on review rows.
+  Those belong to whatever parameters were live at the time; every candidate
+  produces its own, so history is replayed from the ratings. This is the
+  concrete reason `Review` is append-only.
+- **The optimizer does not promise less studying.** Measured on simulated
+  learners: a fast forgetter gets *more* daily reviews (+48%), a slow forgetter
+  fewer (−27%). It promises accuracy. Never phrase it as a workload saving.
 
 ### Notes carried out of phase 2a
 

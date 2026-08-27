@@ -10,7 +10,7 @@ const phases = [
   { n: 0, name: 'Corrections to v1', done: true },
   { n: 1, name: 'Monorepo, schema, CI', done: true },
   { n: 2, name: 'FSRS engine: model + scheduler', done: true },
-  { n: 3, name: 'Parameter optimizer', done: false },
+  { n: 3, name: 'Parameter optimizer + backtest', done: true },
   { n: 4, name: 'API', done: false },
   { n: 5, name: 'AI generation', done: false },
   { n: 6, name: 'Web client', done: false },
@@ -32,7 +32,7 @@ export default function Page() {
         className="tabular text-xs uppercase"
         style={{ color: 'var(--text-faint)', letterSpacing: '0.08em' }}
       >
-        v2 &middot; phase 2 of 7
+        v2 &middot; phase 3 of 7
       </p>
 
       <h1 className="mt-3 text-[34px] leading-10">Recallify</h1>
@@ -45,10 +45,11 @@ export default function Page() {
 
       <p className="mt-4 text-sm" style={{ color: 'var(--text-faint)' }}>
         There is no API, no database and no interface yet. What does exist is the
-        scheduler: the forgetting curve, the difficulty and stability updates, the
-        learning ladder, and replay from an append-only log &mdash; held in place by
-        97 tests, including a differential test against the reference
-        implementation. This page will keep saying exactly what is and is not built.
+        engine: the forgetting curve, the learning ladder, replay from an
+        append-only log, and a trainer that fits the model to one person&rsquo;s own
+        review history &mdash; held in place by 144 tests, including a differential
+        test against the reference implementation. This page will keep saying
+        exactly what is and is not built.
       </p>
 
       <section className="mt-12">

@@ -10,9 +10,9 @@ the scheduler is the interesting part, so it surfaces the memory model instead o
 hiding it: the forgetting curve per card, why a given card is due right now, and
 what your own review history says about the default parameters.
 
-> **Status: phase 2 of 7 complete.** The scheduler works end to end: memory
-> model, state machine, and replay, verified against the reference
-> implementation. There is no API, no database and no UI yet. This
+> **Status: phase 3 of 7 complete.** The scheduler works end to end, and
+> parameters can now be fitted to a user's own review history and backtested
+> against the defaults. There is no API, no database and no UI yet. This
 > README will not claim a feature before the code does it — the
 > [v1 rewrite](#why-v2-exists) happened because an earlier README did exactly
 > that.
@@ -24,7 +24,7 @@ what your own review history says about the default parameters.
 | 0 | Corrections to v1 | done |
 | 1 | Monorepo, Prisma schema, Docker, CI | done |
 | 2 | FSRS engine: memory model + scheduler | done |
-| 3 | Parameter optimizer + backtest | pending |
+| 3 | Parameter optimizer + backtest | done |
 | 4 | API | pending |
 | 5 | AI card generation | pending |
 | 6 | Web client | pending |
@@ -61,6 +61,7 @@ apps/
   web/          Next.js 16 — App Router, React 19, Tailwind 4
 packages/
   fsrs/         the scheduling algorithm — pure, zero-dependency
+  optimizer/    fits parameters to a review log; server-only
   contracts/    Zod schemas: validation + types + OpenAPI, defined once
   core/         logic shared with the future mobile client
   tokens/       design tokens — the only place a colour value may exist

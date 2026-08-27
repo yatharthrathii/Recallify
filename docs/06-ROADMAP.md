@@ -70,8 +70,20 @@ and it is worth more than everything after it.
   parameters; degrades gracefully on tiny histories (< 100 reviews → refuse and
   say why, do not return noise)
 
-**Ships:** "your parameters, trained on your 2,000 reviews: 84% → 91% retention
-at 12% fewer reviews/day." A number, not a claim.
+**Ships:** a measured before-and-after, not a slogan. On simulated learners with
+known parameters, training closes over half the gap to the truth and roughly
+halves calibration error (0.031 → 0.017).
+
+The workload number moves in **both** directions, which is the honest part:
+
+| Learner | Interval | Daily reviews |
+|---|---|---|
+| Forgets faster than average | 60.3d → 40.7d | +48% |
+| Forgets slower than average | 60.3d → 82.1d | −27% |
+
+The optimizer does not promise less studying. It promises an accurate model —
+and for someone who forgets quickly, accuracy means more reviews, not fewer.
+Any marketing that claims otherwise is claiming something the code does not do.
 
 ---
 

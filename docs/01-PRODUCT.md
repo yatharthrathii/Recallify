@@ -67,7 +67,7 @@ We will not beat Anki. We are not trying to. The README says so plainly.
 | 8 | **"Why this card?" panel** | S=12.4d, R=87%, last seen 8d ago, predicted forget date. **Nobody does this** |
 | 9 | **Retention target slider** | 85% → 92% shows the workload cost live. Interactive proof of the model |
 | 10 | **FSRS parameter optimizer** | Trains on the user's own review log. The hardest, best part |
-| 11 | **Backtest / before-after** | "84% → 91% retention at 12% fewer reviews/day". A number, not a claim |
+| 11 | **Backtest / before-after** | Measured: calibration error roughly halves, and intervals move in whichever direction the user actually needs |
 | 12 | Keyboard-only review | space=flip, 1-4=rate, u=undo, ?=help |
 
 ### Tier 3 — Cheap, high recruiter value.
