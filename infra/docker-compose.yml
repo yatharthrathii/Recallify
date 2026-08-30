@@ -34,6 +34,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://recallify:recallify@postgres:5432/recallify?schema=public
+      DIRECT_URL: postgresql://recallify:recallify@postgres:5432/recallify?schema=public
       NODE_ENV: production
       API_PORT: '3001'
       WEB_URL: http://localhost:3000

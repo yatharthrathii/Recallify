@@ -14,6 +14,16 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+
+  // Neon serves two endpoints. The pooled one (host contains "-pooler") runs
+  // PgBouncer in transaction mode, which cannot hold the advisory locks and
+  // prepared statements `prisma migrate` needs -- migrations against it fail
+  // with errors that do not say why. The app uses the pooled URL; migrations
+  // use the direct one.
+  //
+  // With a local Docker Postgres there is no pooler, so both point at the same
+  // place and this costs nothing.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
