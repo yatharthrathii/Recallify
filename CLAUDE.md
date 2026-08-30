@@ -34,7 +34,13 @@ That history is why the honesty rules below are not negotiable.
   97 tests, 100% coverage including branches.
 - Phase 3 done. `packages/optimizer` fits FSRS parameters to a user's own
   review log and backtests the result. 47 tests, 100% coverage.
-- **Next: phase 4** — the API.
+- Phase 4 in progress. `packages/contracts` is complete: every request and
+  response shape for auth, decks, cards, reviews, AI and stats, with 25 tests.
+  169 tests across the workspace.
+- **Blocked on one thing only:** there is no `.env` and no database. The
+  remaining Phase 4 work (Prisma service, auth, modules, integration tests)
+  cannot be verified without one. Yatharth needs to `cp .env.example .env` and
+  paste his Neon `recallify-dev` connection string into `DATABASE_URL`.
 
 Phases were re-ordered after a monetization review: Anki `.apkg` import and the
 Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
