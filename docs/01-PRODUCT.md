@@ -85,12 +85,13 @@ We will not beat Anki. We are not trying to. The README says so plainly.
 
 ### Tier 4 — After web is live.
 
-| # | Feature |
-|---|---|
-| 21 | Android app, full feature parity, offline-first |
-| 22 | Anki `.apkg` import |
-| 23 | Public/shareable decks |
-| 24 | Leech detection + AI rewrite of failing cards |
+| # | Feature | Phase |
+|---|---|---|
+| 21 | **Anki `.apkg` import** — the door an existing Anki user walks in through | 8 |
+| 22 | **Memory Report** — the optimizer's output, made readable | 8 |
+| 23 | Android app, full feature parity, offline-first | 9 |
+| 24 | Public/shareable decks | later |
+| 25 | Leech detection + AI rewrite of failing cards | later |
 
 ### Explicitly NOT building
 
@@ -98,6 +99,55 @@ Payments · real-time collaboration · social feed / leaderboards · i18n ·
 microservices · chat · in-app notifications infra · desktop app.
 
 Each eats scope and returns no hiring signal.
+
+## On charging money
+
+**Nothing here is built, and none of it is why the project exists.** It is
+written down so the phases that come before it do not have to be unpicked later.
+
+### What the market actually looks like
+
+Checked, not assumed:
+
+- Anki is free on desktop and Android, is 19 years old, uses FSRS by default,
+  and picked up institutional backing in February 2026. It is not going to be
+  out-competed on features by a side project.
+- The money in this category is in **content**, not schedulers. AnkiHub sells a
+  medical deck subscription (~$6/mo, plus a $450 lifetime tier) to 154,000
+  subscribers, on top of software that is free. McGraw Hill partnered with them.
+- Paywalls are expensive here: Knowt added one in May 2026 and fell from #5 to
+  #61 in the App Store in four days.
+- Median revenue for a solo developer on an app store is under $1,000/month.
+  The top quartile reaches $3-15k, after 12-18 months, with a narrow niche and
+  a subscription.
+- Ads need six-figure monthly users to matter. This will not have those.
+
+### The rule that matters most
+
+> **The forgetting curve, "why this card?", the retention slider and the
+> optimizer stay free. Permanently.**
+
+They are the entire reason anyone would choose this over Anki. Putting them
+behind a payment would remove the differentiator in order to sell it, and the
+Knowt number is what that costs.
+
+### What may reasonably be charged for
+
+| | Why it is defensible |
+|---|---|
+| **AI generation above a free monthly allowance** | It is the one feature with a real marginal cost. Charging for it is honest; the free tier stays usable |
+| **The Memory Report (phase 8)** | Analysis nobody else sells, built on the optimizer. Free summary, paid full report |
+| **Convenience** — multi-device sync, `.apkg` export | Standard, and none of it is the product's point |
+
+Anything beyond that is a different company: a vertical, its own content, and
+full-time attention. Worth revisiting only if the free product finds users.
+
+### Expected outcome, stated plainly
+
+Realistically a few thousand rupees a month, a year in, if things go well. That
+is not a business and should not be described as one. Its value is as evidence
+that the thing shipped, found users, and was worth something to them — which is
+a different and more useful claim than revenue on its own.
 
 ## The 60-second test
 

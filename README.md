@@ -10,7 +10,7 @@ the scheduler is the interesting part, so it surfaces the memory model instead o
 hiding it: the forgetting curve per card, why a given card is due right now, and
 what your own review history says about the default parameters.
 
-> **Status: phase 3 of 7 complete.** The scheduler works end to end, and
+> **Status: phase 3 of 9 complete.** The scheduler works end to end, and
 > parameters can now be fitted to a user's own review history and backtested
 > against the defaults. There is no API, no database and no UI yet. This
 > README will not claim a feature before the code does it — the
@@ -29,6 +29,8 @@ what your own review history says about the default parameters.
 | 5 | AI card generation | pending |
 | 6 | Web client | pending |
 | 7 | Deploy, seed data, public demo | pending |
+| 8 | Anki import + Memory Report | pending |
+| 9 | Android app | pending |
 
 Full plan: [`docs/06-ROADMAP.md`](docs/06-ROADMAP.md).
 

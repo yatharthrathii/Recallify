@@ -15,6 +15,8 @@ const phases = [
   { n: 5, name: 'AI generation', done: false },
   { n: 6, name: 'Web client', done: false },
   { n: 7, name: 'Deploy, seed, demo', done: false },
+  { n: 8, name: 'Anki import + Memory Report', done: false },
+  { n: 9, name: 'Android app', done: false },
 ];
 
 const scale = [
@@ -32,7 +34,7 @@ export default function Page() {
         className="tabular text-xs uppercase"
         style={{ color: 'var(--text-faint)', letterSpacing: '0.08em' }}
       >
-        v2 &middot; phase 3 of 7
+        v2 &middot; phase 3 of 9
       </p>
 
       <h1 className="mt-3 text-[34px] leading-10">Recallify</h1>

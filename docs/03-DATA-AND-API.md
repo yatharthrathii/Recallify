@@ -227,6 +227,11 @@ GET    /stats/heatmap?days=365
 GET    /stats/forecast?days=30
 GET    /stats/curve?deckId=   forgetting curve series
 
+POST   /import/anki           .apkg upload -> decks, cards, review history
+POST   /import/csv            same pipeline, simpler source
+POST   /report                build a Memory Report from a history
+GET    /report/:id            fetch one
+
 GET    /health                liveness  (also the uptime ping target)
 GET    /ready                 readiness — checks DB
 GET    /docs                  Swagger UI
@@ -283,3 +288,10 @@ Caps, enforced in `ai` module before the call:
 | Per user per day | 100 cards | |
 | Per user per minute | 3 requests | Groq is 30 rpm account-wide |
 | Demo account | 5 cards/day | recruiters can try it; nobody can drain it |
+
+The per-user daily figure is read from the user's stored allowance rather than
+a constant. Generation is the only feature with a real marginal cost, so it is
+the only honest candidate for a paid tier later (see `01-PRODUCT.md`, "On
+charging money"). Storing the number now keeps that a config change instead of
+a refactor. There is no billing and no plans table, and none is planned until
+the free product has users.

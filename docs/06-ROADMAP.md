@@ -111,6 +111,15 @@ Any marketing that claims otherwise is claiming something the code does not do.
 - Rate limits and the per-user daily cap from `03`
 - `AiUsage` logging for the cost chart
 
+**Build the quota as a stored allowance, not a hardcoded number.** Generation is
+the only feature with a real marginal cost, so it is the only honest candidate
+for a paid tier later. Reading the limit from the user's plan now makes that a
+config change; hardcoding it now makes it a refactor across the AI module, the
+UI and the tests.
+
+That is the whole preparation. No billing, no plans table, no pricing — those
+are decisions for after the thing has users.
+
 **Ships:** honest AI generation, server-side, capped.
 
 ---
@@ -146,7 +155,57 @@ Everything after this is upside.
 
 ---
 
-## Phase 8 — Mobile (2.5 weeks)
+## Phase 8 — Anki import and the Memory Report (1.5 weeks)
+
+The acquisition door, and the first thing anyone might pay for. Deliberately
+placed before mobile: it needs no app, and it is what brings users in.
+
+### Anki import
+
+`.apkg` is a zip containing a SQLite database. Parsing it gives two things at
+once: a way for an Anki user to move in without retyping anything, and the
+review history the report below is built from.
+
+- `POST /import/anki` — upload, parse, map notes and cards, preserve the
+  review log
+- Map Anki's scheduling state onto ours where it exists; fall back to NEW
+  where it does not, and say so rather than inventing stability
+- CSV import shares the same pipeline
+
+This is the single biggest reason an Anki user would try Recallify. Without it
+they would have to abandon years of history, and they will not.
+
+### The Memory Report
+
+Anki ships an FSRS optimizer. It returns 21 numbers and explains none of them.
+`packages/optimizer` already produces the comparison Anki does not show —
+this turns that into something a person can read.
+
+```
+POST /report        an Anki export, or the user's own history
+GET  /report/:id    the result
+```
+
+Contents:
+
+- The user's own forgetting curve against the population default
+- Fitted parameters, described in words: "you forget about a third faster
+  than average"
+- Backtest: predicted retention, calibration error, and the workload the
+  change implies — **in whichever direction it actually goes**
+- Review-time-of-day and day-of-week patterns, from the log
+- Leeches: cards failing repeatedly, ranked by time wasted
+- Per-deck cost: which deck is buying the least retention per review
+
+The engine for all of this exists. Phase 8 is presentation and the importer,
+not new algorithms.
+
+**Ships:** a reason for an existing Anki user to show up, and the first
+candidate for a paid tier.
+
+---
+
+## Phase 9 — Mobile (2.5 weeks)
 
 Full feature parity except CSV/`.apkg` import (file picking is a laptop task).
 
@@ -159,7 +218,7 @@ Full feature parity except CSV/`.apkg` import (file picking is a laptop task).
 
 If the Play Console account was created after 13 Nov 2023, closed testing needs
 12 testers for 14 continuous days. **Start recruiting testers during Phase 7**,
-not after Phase 8, or that requirement adds two idle weeks.
+not after Phase 9, or that requirement adds two idle weeks.
 
 **Ships:** Android app on the Play Store.
 
@@ -177,8 +236,9 @@ not after Phase 8, or that requirement adds two idle weeks.
 | 5 AI | 2 days | week 5 |
 | 6 Web | 6 days | week 6 |
 | 7 Live | 4 days | **week 7 — shippable** |
-| 8 Mobile | 2.5 weeks | week 10 |
-| — Play Store review | ~1 week | week 11 |
+| 8 Anki import + Memory Report | 1.5 weeks | week 9 |
+| 9 Mobile | 2.5 weeks | week 12 |
+| — Play Store review | ~1 week | week 13 |
 
 ~2.5-3 months part-time. **Week 7 is the milestone that matters.**
 

@@ -36,6 +36,12 @@ That history is why the honesty rules below are not negotiable.
   review log and backtests the result. 47 tests, 100% coverage.
 - **Next: phase 4** — the API.
 
+Phases were re-ordered after a monetization review: Anki `.apkg` import and the
+Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
+brings an existing Anki user in — without it they would have to abandon years of
+history — and the Report is the optimizer's output made readable, which is the
+one thing here nobody else sells. Neither needs the mobile app to exist.
+
 ### Notes carried out of phase 3
 
 - The optimizer is a **separate package** from `fsrs` on purpose: it is
@@ -92,6 +98,13 @@ That history is why the honesty rules below are not negotiable.
    Slipping here is what makes the mobile app cost 2x instead of 0.5x.
 9. **No raw hex outside `packages/tokens`.** Lint enforces it.
 10. **Ask before large refactors or destructive changes.**
+11. **The forgetting curve, "why this card?", the retention slider and the
+    optimizer stay free.** They are the only reason to pick this over Anki;
+    charging for them would remove the differentiator in order to sell it. Only
+    AI generation (real marginal cost), the Memory Report, and convenience
+    features are ever candidates for a paid tier. See `01-PRODUCT.md`,
+    "On charging money" — including the honest note that this is expected to
+    earn very little and is not why the project exists.
 
 ## Conventions
 
