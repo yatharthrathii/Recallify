@@ -92,9 +92,8 @@ jobs:
       # developer runs, rather than a second code path that can rot unnoticed.
       - name: Write .env for the db scripts
         run: |
-          printf 'DATABASE_URL="%s"
-DIRECT_URL="%s"
-' "$DATABASE_URL" "$DIRECT_URL" > .env
+          echo "DATABASE_URL=$DATABASE_URL" > .env
+          echo "DIRECT_URL=$DIRECT_URL" >> .env
 
       - run: pnpm --filter @recallify/api db:deploy
       - run: pnpm --filter @recallify/api test
