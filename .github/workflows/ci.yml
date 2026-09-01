@@ -74,6 +74,8 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://recallify:recallify@localhost:5432/recallify_test?schema=public
+      # No pooler in front of the CI database, so the direct URL is the same one.
+      DIRECT_URL: postgresql://recallify:recallify@localhost:5432/recallify_test?schema=public
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -83,5 +85,16 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
+      # The db scripts load the root .env through dotenv-cli, because Prisma
+      # looks beside the schema or in cwd and in a monorepo the real one lives
+      # at the root. Writing it here means CI runs the identical command a
+      # developer runs, rather than a second code path that can rot unnoticed.
+      - name: Write .env for the db scripts
+        run: |
+          printf 'DATABASE_URL="%s"
+DIRECT_URL="%s"
+' "$DATABASE_URL" "$DIRECT_URL" > .env
+
       - run: pnpm --filter @recallify/api db:deploy
       - run: pnpm --filter @recallify/api test

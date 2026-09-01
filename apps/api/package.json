@@ -9,9 +9,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "db:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
+    "db:studio": "dotenv -e ../../.env -- prisma studio",
+    "db:push": "dotenv -e ../../.env -- prisma db push"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -38,6 +39,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.8.0",
     "@types/supertest": "^6.0.2",
+    "dotenv-cli": "^11.0.0",
     "prisma": "^6.19.0",
     "supertest": "^7.0.0",
     "vitest": "^2.1.3"
