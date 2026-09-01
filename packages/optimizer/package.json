@@ -2,15 +2,20 @@
   "name": "@recallify/optimizer",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "sideEffects": false,
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@recallify/fsrs": "workspace:*"
@@ -18,5 +23,8 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^2.1.3",
     "vitest": "^2.1.3"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

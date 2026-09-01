@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // CommonJS because NestJS with SWC transpiles file by file and does not
+    // bundle -- it leaves real require() calls, so a package pointing at raw
+    // .ts source cannot be loaded at runtime. Next.js and Vitest both consume
+    // CommonJS without complaint, so one output format serves every consumer.
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["test/**/*", "**/*.test.ts"]
+}

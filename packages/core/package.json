@@ -2,17 +2,23 @@
   "name": "@recallify/core",
   "version": "0.0.0",
   "private": true,
-  "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
     "@recallify/contracts": "workspace:*",
     "@recallify/fsrs": "workspace:*"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

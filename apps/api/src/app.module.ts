@@ -1,7 +1,9 @@
 import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { AuthModule } from './auth/auth.module';
+import { JwtGuard } from './auth/jwt.guard';
 import { ProblemFilter } from './common/problem.filter';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { validateEnv } from './config/env';
@@ -25,6 +27,7 @@ import { PrismaModule } from './prisma/prisma.module';
       validate: validateEnv,
     }),
     PrismaModule,
+    AuthModule,
     HealthModule,
   ],
   providers: [
@@ -34,6 +37,10 @@ import { PrismaModule } from './prisma/prisma.module';
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     // Every error leaves as problem+json carrying the request id.
     { provide: APP_FILTER, useClass: ProblemFilter },
+    // Closed by default. A route is only reachable without a token if it is
+    // explicitly marked @Public(), so forgetting a decorator leaves an endpoint
+    // locked rather than open -- the failure that would otherwise go unnoticed.
+    { provide: APP_GUARD, useClass: JwtGuard },
   ],
 })
 export class AppModule implements NestModule {
