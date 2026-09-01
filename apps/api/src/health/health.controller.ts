@@ -1,15 +1,18 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiExcludeEndpoint, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
+import { ApiExcludeEndpoint, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { PrismaService } from '../prisma/prisma.service';
 
 @ApiTags('health')
 @Controller()
 export class HealthController {
+  constructor(private readonly prisma: PrismaService) {}
+
   /**
    * Service index.
    *
    * This process serves the API, not the website. Anyone who opens the API
-   * origin in a browser expecting the app would otherwise get a bare 404, so
-   * point them somewhere useful instead.
+   * origin in a browser expecting the app would otherwise get a bare 404.
    */
   @Get()
   @ApiExcludeEndpoint()
@@ -24,9 +27,11 @@ export class HealthController {
   }
 
   /**
-   * Liveness. Also the uptime-ping target: Neon's free tier scales to zero
-   * after ~5 minutes idle, so an external ping every 10 minutes keeps the first
-   * real request fast. See docs/02-ARCHITECTURE.md.
+   * Liveness: is the process up.
+   *
+   * Deliberately does NOT touch the database. This is the uptime-ping target,
+   * and a probe that wakes Neon every ten minutes forever would burn the free
+   * tier's compute hours on nothing.
    */
   @Get('health')
   @ApiOperation({ summary: 'Liveness probe' })
@@ -34,10 +39,25 @@ export class HealthController {
     return { status: 'ok', uptime: Math.floor(process.uptime()) };
   }
 
-  /** Readiness. Phase 4 adds a real database round-trip here. */
+  /**
+   * Readiness: can this instance actually serve traffic.
+   *
+   * Answers 503 when the database is unreachable, so a deploy that cannot
+   * reach Neon is caught by the platform rather than by the first user.
+   */
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe' })
-  ready(): { status: string; checks: Record<string, string> } {
-    return { status: 'ok', checks: { database: 'not-wired-yet' } };
+  @ApiResponse({ status: 200, description: 'Ready' })
+  @ApiResponse({ status: 503, description: 'Database unreachable' })
+  async ready(
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ status: string; checks: Record<string, string> }> {
+    const database = await this.prisma.ping();
+    if (!database) res.status(HttpStatus.SERVICE_UNAVAILABLE);
+
+    return {
+      status: database ? 'ok' : 'degraded',
+      checks: { database: database ? 'up' : 'down' },
+    };
   }
 }
