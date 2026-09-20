@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cuid } from './common';
+import { cuid, isoDate, pageQuery, queryBoolean } from './common';
 
 /**
  * Deck accent colours.
@@ -31,11 +31,11 @@ export const deck = z.object({
   description: z.string().nullable(),
   color: deckColor,
   isPublic: z.boolean(),
-  archivedAt: z.coerce.date().nullable(),
+  archivedAt: isoDate.nullable(),
   cardCount: z.number().int().min(0),
   dueCount: z.number().int().min(0),
-  createdAt: z.coerce.date(),
-  updatedAt: z.coerce.date(),
+  createdAt: isoDate,
+  updatedAt: isoDate,
 });
 export type Deck = z.infer<typeof deck>;
 
@@ -62,3 +62,9 @@ export const deckStats = z.object({
   forecast: z.array(forecastDay),
 });
 export type DeckStats = z.infer<typeof deckStats>;
+
+/** Archived decks are hidden from the list unless explicitly asked for. */
+export const listDecksQuery = pageQuery.extend({
+  includeArchived: queryBoolean.default(false),
+});
+export type ListDecksQuery = z.infer<typeof listDecksQuery>;

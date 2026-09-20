@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cuid } from './common';
+import { cuid, isoDate } from './common';
 
 /**
  * Stats are computed server-side from the append-only review log.
@@ -13,7 +13,7 @@ export const statsOverview = z.object({
   level: z.number().int().min(1),
   streak: z.number().int().min(0),
   longestStreak: z.number().int().min(0),
-  lastStudyDate: z.coerce.date().nullable(),
+  lastStudyDate: isoDate.nullable(),
 
   totalReviews: z.number().int().min(0),
   totalCards: z.number().int().min(0),
@@ -58,3 +58,39 @@ export const forgettingCurve = z.object({
   dueInDays: z.number().min(0),
 });
 export type ForgettingCurve = z.infer<typeof forgettingCurve>;
+
+/**
+ * Wrapped in an object rather than returned as a bare array.
+ *
+ * A top-level JSON array is a shape that can never grow: adding "and here is
+ * the range this covers" later would be a breaking change for every client.
+ */
+export const heatmapResponse = z.object({ days: heatmap });
+export type HeatmapResponse = z.infer<typeof heatmapResponse>;
+
+export const heatmapQuery = z.object({
+  days: z.coerce.number().int().min(7).max(730).default(365),
+});
+export type HeatmapQuery = z.infer<typeof heatmapQuery>;
+
+export const forecastQuery = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+  deckId: cuid.optional(),
+});
+export type ForecastQuery = z.infer<typeof forecastQuery>;
+
+/** One of cardId or deckId. A whole-account curve would average away the shape. */
+export const curveQuery = z
+  .object({ cardId: cuid.optional(), deckId: cuid.optional() })
+  .refine((v) => Boolean(v.cardId) !== Boolean(v.deckId), {
+    message: 'Provide either cardId or deckId, not both',
+    path: ['cardId'],
+  });
+export type CurveQuery = z.infer<typeof curveQuery>;
+
+export const forecast = z.object({
+  days: z.array(z.object({ date: z.string().date(), due: z.number().int().min(0) })),
+  /** Cards already overdue, all of which land on day one. */
+  backlog: z.number().int().min(0),
+});
+export type Forecast = z.infer<typeof forecast>;

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { cardSchedule } from './card';
-import { cuid, rating, uuid } from './common';
+import { cardState, cuid, isoDate, pageQuery, queryBoolean, rating, uuid } from './common';
 
 /**
  * Submitting a review.
@@ -21,7 +21,7 @@ export const submitReviewRequest = z.object({
    * happened, not when it eventually uploaded. The server clamps a clock that
    * runs backwards rather than trusting it blindly.
    */
-  reviewedAt: z.coerce.date(),
+  reviewedAt: isoDate,
   /** How long the card was on screen. Optional; used for the stats page only. */
   durationMs: z.number().int().min(0).max(600_000).optional(),
 });
@@ -56,8 +56,13 @@ export type BatchReviewResponse = z.infer<typeof batchReviewResponse>;
 export const queueQuery = z.object({
   deckId: cuid.optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
-  /** Include cards not due yet, for a user who wants to study ahead. */
-  ahead: z.coerce.boolean().default(false),
+  /**
+   * Include cards not due yet, for a user who wants to study ahead.
+   *
+   * queryBoolean, not z.coerce.boolean(): the latter reads the string "false"
+   * as true, so `?ahead=false` would have turned the flag on.
+   */
+  ahead: queryBoolean.default(false),
 });
 export type QueueQuery = z.infer<typeof queueQuery>;
 
@@ -72,7 +77,7 @@ export const explanation = z.object({
   difficulty: z.number().min(0).max(10),
   elapsedDays: z.number().min(0),
   intervalDays: z.number().min(0),
-  predictedForgetAt: z.coerce.date(),
+  predictedForgetAt: isoDate,
   /** What each button would do, so the choice is visible before it is made. */
   projectedIntervals: z.object({
     again: z.number().min(0),
@@ -82,3 +87,58 @@ export const explanation = z.object({
   }),
 });
 export type Explanation = z.infer<typeof explanation>;
+
+export const reviewHistoryQuery = pageQuery.extend({ cardId: cuid.optional() });
+export type ReviewHistoryQuery = z.infer<typeof reviewHistoryQuery>;
+
+/**
+ * One row of the append-only log, as stored. The before-state is included
+ * because it is what makes the log replayable on its own.
+ */
+export const reviewHistoryItem = z.object({
+  id: uuid,
+  cardId: cuid,
+  rating,
+  prevState: cardState,
+  prevStability: z.number(),
+  prevDifficulty: z.number(),
+  newStability: z.number(),
+  newDifficulty: z.number(),
+  elapsedDays: z.number(),
+  scheduledDays: z.number(),
+  retrievability: z.number(),
+  durationMs: z.number().int().nullable(),
+  reviewedAt: isoDate,
+});
+export type ReviewHistoryItem = z.infer<typeof reviewHistoryItem>;
+
+/**
+ * A card in the due queue, answer included.
+ *
+ * Withholding `back` until the user taps "show" would stop them peeking at the
+ * network tab, but it would also mean a round trip per card -- and the mobile
+ * client has to work on a plane. Offline-first wins: these are the user's own
+ * cards, and the only person a peek costs anything is them.
+ */
+export const queueCard = z.object({
+  id: cuid,
+  deckId: cuid,
+  deckTitle: z.string(),
+  front: z.string(),
+  back: z.string(),
+  hint: z.string().nullable(),
+  state: cardState,
+  dueAt: isoDate,
+  /** Predicted recall right now. The reason this card is here. */
+  retrievability: z.number().min(0).max(1),
+});
+export type QueueCard = z.infer<typeof queueCard>;
+
+export const queueResponse = z.object({
+  cards: z.array(queueCard),
+  /** Everything due right now, before the daily caps were applied. */
+  dueTotal: z.number().int().min(0),
+  newRemainingToday: z.number().int().min(0),
+  reviewRemainingToday: z.number().int().min(0),
+});
+export type QueueResponse = z.infer<typeof queueResponse>;

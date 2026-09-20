@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cardSource, cardState, cuid } from './common';
+import { cardSource, cardState, cuid, isoDate, pageQuery, queryBoolean } from './common';
 
 export const cardText = z.string().trim().min(1).max(4000);
 
@@ -36,10 +36,10 @@ export const cardSchedule = z.object({
   state: cardState,
   stability: z.number().min(0),
   difficulty: z.number().min(0).max(10),
-  dueAt: z.coerce.date(),
+  dueAt: isoDate,
   reps: z.number().int().min(0),
   lapses: z.number().int().min(0),
-  lastReviewedAt: z.coerce.date().nullable(),
+  lastReviewedAt: isoDate.nullable(),
   learningStep: z.number().int().min(0),
 });
 
@@ -51,9 +51,33 @@ export const card = z
     back: z.string(),
     hint: z.string().nullable(),
     source: cardSource,
-    suspendedAt: z.coerce.date().nullable(),
-    createdAt: z.coerce.date(),
-    updatedAt: z.coerce.date(),
+    suspendedAt: isoDate.nullable(),
+    createdAt: isoDate,
+    updatedAt: isoDate,
   })
   .merge(cardSchedule);
 export type Card = z.infer<typeof card>;
+
+export const listCardsQuery = pageQuery.extend({
+  deckId: cuid.optional(),
+  includeSuspended: queryBoolean.default(false),
+});
+export type ListCardsQuery = z.infer<typeof listCardsQuery>;
+
+/**
+ * Suspending is not deleting. A suspended card stops appearing in the queue but
+ * keeps its FSRS state and its review history, so unsuspending resumes exactly
+ * where it left off rather than starting the card over.
+ */
+export const suspendCardRequest = z.object({ suspended: z.boolean() });
+export type SuspendCardRequest = z.infer<typeof suspendCardRequest>;
+
+/**
+ * Bulk create returns a count, not the rows. Five hundred cards is a large
+ * response to send back to a client that is about to refetch the deck anyway.
+ */
+export const bulkCreateResponse = z.object({
+  deckId: cuid,
+  created: z.number().int().min(0),
+});
+export type BulkCreateResponse = z.infer<typeof bulkCreateResponse>;

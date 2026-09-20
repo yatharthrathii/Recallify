@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cuid } from './common';
+import { cuid, isoDate } from './common';
 
 /**
  * AI card generation.
@@ -49,6 +49,6 @@ export const aiUsage = z.object({
   usedToday: z.number().int().min(0),
   dailyLimit: z.number().int().min(0),
   remaining: z.number().int().min(0),
-  resetsAt: z.coerce.date(),
+  resetsAt: isoDate,
 });
 export type AiUsage = z.infer<typeof aiUsage>;

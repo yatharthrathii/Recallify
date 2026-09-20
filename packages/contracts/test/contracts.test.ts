@@ -10,9 +10,10 @@
 import { describe, expect, it } from 'vitest';
 import { generateRequest } from '../src/ai';
 import { loginRequest, password, registerRequest, updateSettingsRequest } from '../src/auth';
-import { bulkCreateRequest, createCardRequest } from '../src/card';
-import { pageQuery, paginated, problemDetails } from '../src/common';
-import { createDeckRequest, updateDeckRequest } from '../src/deck';
+import { bulkCreateRequest, createCardRequest, listCardsQuery } from '../src/card';
+import { isoDate, pageQuery, paginated, problemDetails, queryBoolean } from '../src/common';
+import { createDeckRequest, listDecksQuery, updateDeckRequest } from '../src/deck';
+import { optimizerApplyRequest } from '../src/optimizer';
 import { batchReviewRequest, queueQuery, submitReviewRequest } from '../src/review';
 import { z } from 'zod';
 
@@ -209,5 +210,73 @@ describe('shared shapes', () => {
         traceId: 'req_123',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('query primitives', () => {
+  it('reads the string "false" as false', () => {
+    // z.coerce.boolean() is Boolean(value), so every non-empty string is true
+    // -- including "false". A flag written that way can be switched on and
+    // never off, and the happy path hides it.
+    expect(queryBoolean.parse('false')).toBe(false);
+    expect(queryBoolean.parse('0')).toBe(false);
+    expect(queryBoolean.parse('true')).toBe(true);
+    expect(queryBoolean.parse('1')).toBe(true);
+    expect(queryBoolean.parse(true)).toBe(true);
+  });
+
+  it('rejects a flag that is neither', () => {
+    expect(queryBoolean.safeParse('yes').success).toBe(false);
+  });
+
+  it('defaults listing flags to the safe answer', () => {
+    expect(listDecksQuery.parse({}).includeArchived).toBe(false);
+    expect(listCardsQuery.parse({}).includeSuspended).toBe(false);
+    expect(queueQuery.parse({}).ahead).toBe(false);
+  });
+});
+
+describe('isoDate', () => {
+  it('turns an ISO string into a Date', () => {
+    const parsed = isoDate.parse('2026-09-20T13:45:00.000Z');
+    expect(parsed).toBeInstanceOf(Date);
+    expect(parsed.toISOString()).toBe('2026-09-20T13:45:00.000Z');
+  });
+
+  it('accepts an offset, because a phone is not always on UTC', () => {
+    expect(isoDate.parse('2026-09-20T19:15:00.000+05:30').toISOString()).toBe(
+      '2026-09-20T13:45:00.000Z',
+    );
+  });
+
+  it('rejects anything that is not a timestamp', () => {
+    expect(isoDate.safeParse('2026-09-20').success).toBe(false);
+    expect(isoDate.safeParse('yesterday').success).toBe(false);
+    expect(isoDate.safeParse(1_789_000_000_000).success).toBe(false);
+  });
+
+  it('is what submitReviewRequest uses, so a bad clock string is refused', () => {
+    expect(
+      submitReviewRequest.safeParse({
+        id: UUID,
+        cardId: CUID,
+        rating: 3,
+        reviewedAt: 'not a date',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('optimizer', () => {
+  it('requires exactly 21 parameters', () => {
+    const twenty = Array.from({ length: 20 }, () => 0.5);
+    expect(optimizerApplyRequest.safeParse({ params: twenty }).success).toBe(false);
+    expect(optimizerApplyRequest.safeParse({ params: [...twenty, 0.5] }).success).toBe(true);
+  });
+
+  it('refuses a parameter that is not a finite number', () => {
+    const params = Array.from({ length: 21 }, () => 0.5);
+    params[3] = Number.POSITIVE_INFINITY;
+    expect(optimizerApplyRequest.safeParse({ params }).success).toBe(false);
   });
 });

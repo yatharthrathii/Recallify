@@ -5,3 +5,5 @@ export * from './card';
 export * from './review';
 export * from './ai';
 export * from './stats';
+export * from './optimizer';
+export * from './health';

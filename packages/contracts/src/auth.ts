@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { cuid } from './common';
+import { cuid, isoDate } from './common';
 
 /**
  * Auth contracts.
@@ -52,7 +52,7 @@ export const currentUser = z.object({
   id: cuid,
   email: z.string().email(),
   displayName: z.string().nullable(),
-  createdAt: z.coerce.date(),
+  createdAt: isoDate,
   isDemo: z.boolean(),
 
   desiredRetention: z.number().min(0.7).max(0.99),
@@ -60,7 +60,7 @@ export const currentUser = z.object({
   dailyReviewLimit: z.number().int().min(0).max(9999),
   /** Empty until the optimizer has run; the engine falls back to defaults. */
   hasOptimizedParams: z.boolean(),
-  paramsOptimizedAt: z.coerce.date().nullable(),
+  paramsOptimizedAt: isoDate.nullable(),
 });
 export type CurrentUser = z.infer<typeof currentUser>;
 
