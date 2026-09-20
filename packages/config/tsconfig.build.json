@@ -7,6 +7,15 @@
     // CommonJS without complaint, so one output format serves every consumer.
     "module": "CommonJS",
     "moduleResolution": "Node",
+
+    // Turbo is the build cache here. tsc's own incremental cache is a second
+    // one that can disagree with it: .tsbuildinfo sits beside the config
+    // rather than inside dist/, so deleting dist/ leaves tsc believing it is
+    // up to date. It emits nothing, turbo caches that nothing as the build
+    // output, and the next cache hit restores an empty dist/ -- at which
+    // point every package that imports it stops resolving. One cache, not two.
+    "incremental": false,
+
     "rootDir": "./src",
     "outDir": "./dist",
     "declaration": true,

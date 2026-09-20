@@ -12,6 +12,7 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "test:packages": "turbo test --filter=./packages/*",
     "test:fsrs": "pnpm --filter @recallify/fsrs test",
     "db:generate": "pnpm --filter @recallify/api db:generate",
     "db:migrate": "pnpm --filter @recallify/api db:migrate",

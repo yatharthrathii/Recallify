@@ -47,9 +47,14 @@ jobs:
           node-version: '22'
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # packages/fsrs is pinned at 100% coverage by its own vitest config.
-      # This job fails if the algorithm loses a single covered line.
-      - run: pnpm test
+      # packages/* only. The API's tests are integration tests against a real
+      # database, and this job has none -- running them here fails on a missing
+      # connection rather than on anything being wrong. They run in the job
+      # below, which has Postgres.
+      #
+      # packages/fsrs is pinned at 100% coverage by its own vitest config, so
+      # this job fails if the algorithm loses a single covered line.
+      - run: pnpm test:packages
       - uses: codecov/codecov-action@v4
         if: always()
         with:
@@ -104,4 +109,11 @@ jobs:
           echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> .env
 
       - run: pnpm --filter @recallify/api db:deploy
+
+      # The API imports @recallify/contracts and @recallify/fsrs from their
+      # compiled dist/, so without this the test run cannot even resolve them.
+      # Turbo builds exactly the API's dependencies, not the web app.
+      - run: pnpm turbo build --filter=@recallify/api^...
+      - run: pnpm --filter @recallify/api db:generate
+
       - run: pnpm --filter @recallify/api test
