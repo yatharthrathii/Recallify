@@ -90,10 +90,18 @@ jobs:
       # looks beside the schema or in cwd and in a monorepo the real one lives
       # at the root. Writing it here means CI runs the identical command a
       # developer runs, rather than a second code path that can rot unnoticed.
-      - name: Write .env for the db scripts
+      # The integration tests boot the real application, so this file has to
+      # satisfy the same env schema the server does -- not just the database
+      # URLs the migration scripts need. A missing secret fails validation at
+      # boot, which is exactly what it is meant to do.
+      - name: Write .env for the db scripts and the app under test
         run: |
           echo "DATABASE_URL=$DATABASE_URL" > .env
           echo "DIRECT_URL=$DIRECT_URL" >> .env
+          echo "NODE_ENV=test" >> .env
+          echo "LOG_LEVEL=error" >> .env
+          echo "JWT_ACCESS_SECRET=$(openssl rand -hex 32)" >> .env
+          echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> .env
 
       - run: pnpm --filter @recallify/api db:deploy
       - run: pnpm --filter @recallify/api test

@@ -1,5 +1,7 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiConflictResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ProblemDetailsDto } from '../common/problem.dto';
+import { ApiCreated, ApiNoContent, ApiOk } from '../common/api-responses';
 import type { Request, Response } from 'express';
 import { CurrentUser, type AuthenticatedUser } from '../common/current-user.decorator';
 import { AuthService } from './auth.service';
@@ -50,6 +52,11 @@ export class AuthController {
   @Public()
   @Post('register')
   @ApiOperation({ summary: 'Create an account' })
+  @ApiCreated(AuthTokensDto)
+  @ApiConflictResponse({
+    description: 'That email already has an account.',
+    type: ProblemDetailsDto,
+  })
   async register(
     @Body() body: RegisterDto,
     @Req() req: Request,
@@ -62,6 +69,7 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Sign in' })
+  @ApiOk(AuthTokensDto)
   async login(
     @Body() body: LoginDto,
     @Req() req: Request,
@@ -80,6 +88,7 @@ export class AuthController {
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Rotate the session' })
+  @ApiOk(AuthTokensDto)
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -93,6 +102,7 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Sign out of this session' })
+  @ApiNoContent('Signed out. The refresh cookie is cleared.')
   async logout(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -106,6 +116,7 @@ export class AuthController {
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'The signed-in user' })
+  @ApiOk(CurrentUserDto)
   me(@CurrentUser() user: AuthenticatedUser): Promise<CurrentUserDto> {
     return this.auth.me(user.id);
   }

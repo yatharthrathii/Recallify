@@ -102,6 +102,13 @@ Any marketing that claims otherwise is claiming something the code does not do.
 
 **Ships:** a documented, tested API. Swagger URL is now a deliverable.
 
+Done. `/optimizer/backtest` was folded into `/optimizer/run` -- both need the
+same replay of the same log, so as separate endpoints the expensive half of the
+work would be done twice. `/optimizer/status` and `/optimizer/reset` were added:
+the UI has to know whether there is enough history to fit on before it offers
+the button, and adopting fitted parameters is worth nothing if it cannot be
+undone.
+
 ---
 
 ## Phase 5 — AI (2 days)

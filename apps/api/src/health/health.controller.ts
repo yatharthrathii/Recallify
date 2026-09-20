@@ -1,8 +1,13 @@
 import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
 import { ApiExcludeEndpoint, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { liveness, readiness } from '@recallify/contracts';
 import type { Response } from 'express';
+import { createZodDto } from 'nestjs-zod';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+
+class LivenessDto extends createZodDto(liveness) {}
+class ReadinessDto extends createZodDto(readiness) {}
 
 @ApiTags('health')
 @Controller()
@@ -38,7 +43,8 @@ export class HealthController {
   @Public()
   @Get('health')
   @ApiOperation({ summary: 'Liveness probe' })
-  health(): { status: string; uptime: number } {
+  @ApiResponse({ status: 200, type: LivenessDto })
+  health(): LivenessDto {
     return { status: 'ok', uptime: Math.floor(process.uptime()) };
   }
 
@@ -51,11 +57,9 @@ export class HealthController {
   @Public()
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe' })
-  @ApiResponse({ status: 200, description: 'Ready' })
-  @ApiResponse({ status: 503, description: 'Database unreachable' })
-  async ready(
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<{ status: string; checks: Record<string, string> }> {
+  @ApiResponse({ status: 200, description: 'Ready', type: ReadinessDto })
+  @ApiResponse({ status: 503, description: 'Database unreachable', type: ReadinessDto })
+  async ready(@Res({ passthrough: true }) res: Response): Promise<ReadinessDto> {
     const database = await this.prisma.ping();
     if (!database) res.status(HttpStatus.SERVICE_UNAVAILABLE);
 

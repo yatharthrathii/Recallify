@@ -61,6 +61,29 @@ function fromPrisma(
   }
 }
 
+/**
+ * True for a ZodError, including one thrown by a different copy of zod.
+ *
+ * `instanceof` compares against one module instance. That is enough when
+ * everything resolves to the same file, and it stops being enough the moment
+ * something does not: a package that brings its own zod, a CJS build sitting
+ * next to an ESM one, zod 4 alongside zod 3. This filter already caught that
+ * -- the contracts package is compiled to CommonJS while the API's own source
+ * is loaded as ESM under the test runner, so the two ZodError classes are
+ * different objects and every validation failure came back as a bare 400 with
+ * no field errors in it.
+ *
+ * Checking the shape instead is not a weaker test. A thrown object carrying
+ * `name: 'ZodError'` and an `issues` array is a ZodError by every property
+ * this filter uses.
+ */
+function isZodError(value: unknown): value is ZodError {
+  if (value instanceof ZodError) return true;
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as { name?: unknown; issues?: unknown };
+  return candidate.name === 'ZodError' && Array.isArray(candidate.issues);
+}
+
 function flattenZod(error: ZodError): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const issue of error.issues) {
@@ -105,7 +128,7 @@ export class ProblemFilter implements ExceptionFilter {
         ? exception.getZodError()
         : exception;
 
-    if (zodError instanceof ZodError) {
+    if (isZodError(zodError)) {
       return {
         ...base,
         status: HttpStatus.BAD_REQUEST,

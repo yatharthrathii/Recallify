@@ -34,19 +34,72 @@ That history is why the honesty rules below are not negotiable.
   97 tests, 100% coverage including branches.
 - Phase 3 done. `packages/optimizer` fits FSRS parameters to a user's own
   review log and backtests the result. 47 tests, 100% coverage.
-- Phase 4 in progress. `packages/contracts` is complete: every request and
-  response shape for auth, decks, cards, reviews, AI and stats, with 25 tests.
-  169 tests across the workspace.
-- **Blocked on one thing only:** there is no `.env` and no database. The
-  remaining Phase 4 work (Prisma service, auth, modules, integration tests)
-  cannot be verified without one. Yatharth needs to `cp .env.example .env` and
-  paste his Neon `recallify-dev` connection string into `DATABASE_URL`.
+- Phase 4 done. `apps/api` is a working NestJS service on Neon Postgres:
+  auth with rotating refresh tokens and reuse detection, decks, cards, reviews
+  (submit, offline batch, queue with daily caps, explain, history), server-side
+  stats (xp, level, streak, heatmap, forecast, forgetting curve) and the
+  optimizer endpoints. 30 of 33 operations publish a response schema at
+  `/docs-json`; the other three are 204s with no body.
+  **212 tests** across the workspace, 34 of them integration tests that run
+  against a real Postgres both locally and in CI.
+- Next: phase 5, AI generation.
 
 Phases were re-ordered after a monetization review: Anki `.apkg` import and the
 Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
 brings an existing Anki user in — without it they would have to abandon years of
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
+
+### Notes carried out of phase 4
+
+- **Vitest cannot run NestJS without SWC.** Vitest transforms with esbuild,
+  which does not implement `emitDecoratorMetadata`. Without it Nest sees no
+  constructor parameter types, every injected dependency arrives as
+  `undefined`, and the first symptom is a 500 from a guard whose `Reflector` is
+  missing. `apps/api/vitest.config.ts` uses `unplugin-swc` — the same compiler
+  `nest build` already uses.
+- **`instanceof` is not a safe way to recognise a library's error.** The
+  contracts package is compiled to CommonJS while the API's own source loads as
+  ESM under the test runner, so there were two `ZodError` classes and every
+  validation failure came back as a bare 400 with no field errors. The problem
+  filter now checks the shape. This is not a weaker test — it is the same test
+  without the module-identity assumption.
+- **`z.coerce.boolean()` is a trap.** It is `Boolean(value)`, so the query
+  string `?ahead=false` turns the flag *on*. `queryBoolean` in
+  `packages/contracts/src/common.ts` is the only boolean allowed in a query.
+- **`z.coerce.date()` cannot be described in OpenAPI.** nestjs-zod emits an
+  empty schema for any `ZodDate`, so every timestamp in the published document
+  said nothing at all — including `reviewedAt`, the one value an offline client
+  must get right. `isoDate` is a string schema with a `.transform()`; `.pipe()`
+  is not understood either. Verified against the generated document, not
+  assumed.
+- **Swagger does not read return types.** @nestjs/swagger documents a response
+  body only with an explicit decorator or the build-time plugin. Before
+  `common/api-responses.ts` existed, all 33 operations published *zero*
+  response schemas while the docs page still looked complete.
+- **The review pre-check was removed.** Asking "has this id been seen?" before
+  inserting is a second mechanism competing with the primary key, and a round
+  trip per review — 200 extra queries on a full offline batch. The unique
+  constraint decides it; P2002 is read as "already had this one".
+- **Reviews in a batch are applied one at a time, oldest first.** Two reviews
+  of the same card are not independent: the second one's interval is computed
+  from the state the first left behind. In parallel they would both read the
+  same starting state and the later write would silently discard the earlier
+  review. There is an integration test that fails if this is ever parallelised.
+- **The streak moves forward only.** An offline batch from last week adds to
+  the log and the heatmap but does not retroactively repair a broken streak.
+  Recomputing it would mean scanning the whole log on every single review.
+- Day bucketing is **UTC**, in `common/dates.ts`. Per-user timezones are a real
+  feature and a later one; the server's local zone would make the streak break
+  at midnight in whatever region the container happens to run in.
+- `/optimizer/run` **saves nothing**. It returns a proposal with the backtest
+  attached, because the workload change is frequently *upward* and the user
+  should see that before adopting it. Fitting runs inline with a capped
+  iteration count, a capped training window and a 24-hour per-user cooldown —
+  a worker thread is the right answer at scale and is not pretended here.
+- Local integration runs hit Neon over the network, so the suite takes minutes
+  and has produced one transient 500 under sustained load. CI runs a Postgres
+  container on the same host and is an order of magnitude faster.
 
 ### Notes carried out of phase 3
 
@@ -98,6 +151,8 @@ one thing here nobody else sells. Neither needs the mobile app to exist.
 5. **`Review` is append-only.** Never update, never delete. Card state is a cache
    derived from replaying it.
 6. **Every query is scoped by `userId` in the `where`**, not filtered afterwards.
+   There is no 403 in this API: not-yours and not-there are the same 404, so a
+   guessed id cannot be confirmed.
 7. **No secret in a client bundle.** Nothing sensitive behind `NEXT_PUBLIC_`.
    v1 leaked its AI key exactly this way.
 8. **Logic that mobile will need goes in `packages/core`**, not in a component.

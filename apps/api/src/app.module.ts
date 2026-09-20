@@ -4,11 +4,17 @@ import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthModule } from './auth/auth.module';
 import { JwtGuard } from './auth/jwt.guard';
+import { CardsModule } from './cards/cards.module';
 import { ProblemFilter } from './common/problem.filter';
 import { RequestIdMiddleware } from './common/request-id.middleware';
 import { validateEnv } from './config/env';
+import { DecksModule } from './decks/decks.module';
 import { HealthModule } from './health/health.module';
+import { OptimizerModule } from './optimizer/optimizer.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { SchedulingModule } from './scheduling/scheduling.module';
+import { StatsModule } from './stats/stats.module';
 
 /**
  * Modular monolith. One deployable, hard module boundaries.
@@ -27,7 +33,13 @@ import { PrismaModule } from './prisma/prisma.module';
       validate: validateEnv,
     }),
     PrismaModule,
+    SchedulingModule,
     AuthModule,
+    DecksModule,
+    CardsModule,
+    ReviewsModule,
+    StatsModule,
+    OptimizerModule,
     HealthModule,
   ],
   providers: [

@@ -184,9 +184,15 @@ README. One line, and it shows you think about the database rather than hoping.
 - Every response carries `X-Request-Id`; it is logged and shown in the UI on error
 - Lists are **cursor**-paginated: `?cursor=<id>&limit=50` returns
   `{ items, nextCursor }`. Never offset — it skips rows when data shifts.
-- Mutations that can be retried accept `Idempotency-Key`
+- Retries are keyed by the client's own id, not by a header. `POST /review`
+  takes a device-generated UUID as the review's primary key, which makes the
+  idempotency key part of the resource rather than a parallel mechanism the
+  server has to remember separately. A repeat returns `applied: false`.
 
 ## Endpoints
+
+Built and covered by integration tests, except where marked. The live document
+is `/docs-json`; this table is the intent, that is the truth.
 
 ```
 POST   /auth/register
@@ -210,33 +216,40 @@ DELETE /cards/:id
 POST   /cards/:id/suspend
 
 GET    /review/queue?deckId=&limit=   the due queue
-POST   /review                        submit one   (Idempotency-Key)
+POST   /review                        submit one. The body's `id` is the key.
 POST   /review/batch                  offline sync (see 05)
 GET    /review/history?cardId=
-GET    /review/explain/:cardId        "why this card?" — S, D, R, forget date
+GET    /review/explain/:cardId        "why this card?" — S, D, R, forget date,
+                                      and what each of the four buttons would do
 
-POST   /ai/generate           topic|text -> cards. Rate limited + capped
-GET    /ai/usage              remaining quota for this user
+POST   /ai/generate           phase 5
+GET    /ai/usage              phase 5
 
-POST   /optimizer/run         train params on this user's review log
-GET    /optimizer/backtest    default vs optimised: retention + workload
-POST   /optimizer/apply       write params to User
+GET    /optimizer/status      enough history yet? cooldown? using fitted params?
+POST   /optimizer/run         fit + backtest in one call. Saves nothing.
+POST   /optimizer/apply       adopt a fitted set (re-checked against bounds)
+POST   /optimizer/reset       back to the published defaults
 
-GET    /stats/overview        xp, level, streak
+GET    /stats/overview        xp, level, streak, measured retention
 GET    /stats/heatmap?days=365
-GET    /stats/forecast?days=30
-GET    /stats/curve?deckId=   forgetting curve series
+GET    /stats/forecast?days=30&deckId=
+GET    /stats/curve?cardId=|deckId=   forgetting curve series
 
-POST   /import/anki           .apkg upload -> decks, cards, review history
-POST   /import/csv            same pipeline, simpler source
-POST   /report                build a Memory Report from a history
-GET    /report/:id            fetch one
+POST   /import/anki           phase 8
+POST   /import/csv            phase 8
+POST   /report                phase 8
+GET    /report/:id            phase 8
 
 GET    /health                liveness  (also the uptime ping target)
 GET    /ready                 readiness — checks DB
 GET    /docs                  Swagger UI
 GET    /docs-json             OpenAPI document
 ```
+
+`/optimizer/backtest` is gone as a separate endpoint. Backtesting needs the
+same replay of the same review log that fitting does, so running it separately
+would do the expensive half of the work twice to answer one question. `/run`
+returns the fit and the comparison together, and saves neither.
 
 ## Auth flow in detail
 
