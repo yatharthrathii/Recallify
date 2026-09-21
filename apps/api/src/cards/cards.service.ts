@@ -123,7 +123,8 @@ export class CardsService {
       data: {
         ...(input.front !== undefined ? { front: input.front } : {}),
         ...(input.back !== undefined ? { back: input.back } : {}),
-        ...(input.hint !== undefined ? { hint: input.hint } : {}),
+        // Clearing the field means "no hint", which is null, not ''.
+        ...(input.hint !== undefined ? { hint: input.hint === '' ? null : input.hint } : {}),
       },
     });
     return this.toCard(row);

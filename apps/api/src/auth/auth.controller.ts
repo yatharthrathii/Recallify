@@ -1,11 +1,29 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiConflictResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ProblemDetailsDto } from '../common/problem.dto';
 import { ApiCreated, ApiNoContent, ApiOk } from '../common/api-responses';
 import type { Request, Response } from 'express';
 import { CurrentUser, type AuthenticatedUser } from '../common/current-user.decorator';
 import { AuthService } from './auth.service';
-import { AuthTokensDto, CurrentUserDto, LoginDto, RegisterDto } from './dto';
+import {
+  AuthTokensDto,
+  CurrentUserDto,
+  DeleteAccountDto,
+  LoginDto,
+  RegisterDto,
+  UpdateSettingsDto,
+} from './dto';
 import { Public } from './public.decorator';
 import { type IssuedTokens, TokenService } from './token.service';
 
@@ -119,5 +137,38 @@ export class AuthController {
   @ApiOk(CurrentUserDto)
   me(@CurrentUser() user: AuthenticatedUser): Promise<CurrentUserDto> {
     return this.auth.me(user.id);
+  }
+
+  @Patch('me')
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Update settings',
+    description:
+      'Name, retention target and daily limits. A new retention target applies ' +
+      "from each card's next review; existing due dates are not rewritten.",
+  })
+  @ApiOk(CurrentUserDto)
+  updateSettings(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: UpdateSettingsDto,
+  ): Promise<CurrentUserDto> {
+    return this.auth.updateSettings(user.id, body);
+  }
+
+  @Delete('me')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete the account and everything it owns',
+    description: 'Requires the password again. Cannot be undone.',
+  })
+  @ApiNoContent('Deleted.')
+  async deleteAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: DeleteAccountDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    await this.auth.deleteAccount(user.id, body.password);
+    res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
   }
 }

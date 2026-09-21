@@ -1,8 +1,10 @@
 import {
   authTokens,
   currentUser,
+  deleteAccountRequest,
   loginRequest,
   registerRequest,
+  updateSettingsRequest,
 } from '@recallify/contracts';
 import { createZodDto } from 'nestjs-zod';
 
@@ -17,3 +19,5 @@ export class RegisterDto extends createZodDto(registerRequest) {}
 export class LoginDto extends createZodDto(loginRequest) {}
 export class AuthTokensDto extends createZodDto(authTokens) {}
 export class CurrentUserDto extends createZodDto(currentUser) {}
+export class UpdateSettingsDto extends createZodDto(updateSettingsRequest) {}
+export class DeleteAccountDto extends createZodDto(deleteAccountRequest) {}

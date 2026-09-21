@@ -1,5 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import type { CurrentUser, LoginRequest, RegisterRequest } from '@recallify/contracts';
+import type {
+  CurrentUser,
+  LoginRequest,
+  RegisterRequest,
+  UpdateSettingsRequest,
+} from '@recallify/contracts';
 import { PrismaService } from '../prisma/prisma.service';
 import { PasswordService } from './password.service';
 import { type IssuedTokens, TokenService } from './token.service';
@@ -51,6 +56,50 @@ export class AuthService {
     if (!user || !ok) throw new UnauthorizedException('Email or password is incorrect.');
 
     return this.tokens.issue(user.id, user.email, undefined, userAgent);
+  }
+
+  /**
+   * Settings, including the retention target.
+   *
+   * Changing desiredRetention does not rewrite any card's due date. Intervals
+   * already handed out stand; the new target applies from each card's next
+   * review. Rescheduling a whole collection because a slider moved would be a
+   * surprise, and an expensive one.
+   */
+  async updateSettings(userId: string, input: UpdateSettingsRequest): Promise<CurrentUser> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(input.displayName !== undefined ? { displayName: input.displayName } : {}),
+        ...(input.desiredRetention !== undefined
+          ? { desiredRetention: input.desiredRetention }
+          : {}),
+        ...(input.dailyNewLimit !== undefined ? { dailyNewLimit: input.dailyNewLimit } : {}),
+        ...(input.dailyReviewLimit !== undefined
+          ? { dailyReviewLimit: input.dailyReviewLimit }
+          : {}),
+      },
+    });
+    return this.me(userId);
+  }
+
+  /**
+   * Erase the account and, by cascade, everything it owns.
+   *
+   * Asks for the password again: a session left open on a shared laptop should
+   * not be enough to delete years of review history. Google Play also requires
+   * apps that create accounts to offer deletion from inside the app.
+   */
+  async deleteAccount(userId: string, password: string): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { passwordHash: true },
+    });
+
+    const ok = await this.passwords.verify(user.passwordHash, password);
+    if (!ok) throw new UnauthorizedException('That password is not correct.');
+
+    await this.prisma.user.delete({ where: { id: userId } });
   }
 
   async me(userId: string): Promise<CurrentUser> {

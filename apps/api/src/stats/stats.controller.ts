@@ -10,6 +10,7 @@ import {
   HeatmapDto,
   HeatmapQueryDto,
   StatsOverviewDto,
+  WorkloadPreviewDto,
 } from './dto';
 import { StatsService } from './stats.service';
 
@@ -49,6 +50,18 @@ export class StatsController {
     @Query() query: ForecastQueryDto,
   ): Promise<ForecastDto> {
     return this.stats.forecast(user.id, query);
+  }
+
+  @Get('workload')
+  @ApiOperation({
+    summary: 'Estimated daily reviews at each retention target',
+    description:
+      'The whole slider range in one response. An estimate: it counts cards ' +
+      'in REVIEW and ignores lapses and new cards.',
+  })
+  @ApiOk(WorkloadPreviewDto)
+  workload(@CurrentUser() user: AuthenticatedUser): Promise<WorkloadPreviewDto> {
+    return this.stats.workload(user.id);
   }
 
   @Get('curve')

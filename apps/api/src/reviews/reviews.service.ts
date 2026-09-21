@@ -278,16 +278,24 @@ export class ReviewsService {
       front: row.front,
       back: row.back,
       hint: row.hint,
-      state: row.state,
-      dueAt: row.dueAt,
       retrievability:
         row.state === 'NEW' || !row.lastReviewedAt
           ? 0
           : retrievability(config.params, elapsedDays(row.lastReviewedAt, now), row.stability),
+      ...this.schedule(row),
     });
 
     return {
       cards: [...dueCards, ...newCards].map(toQueueCard),
+      // The same parameters the server will schedule with, so the client can
+      // run the pure engine locally and agree with it.
+      config: {
+        params: [...config.params],
+        desiredRetention: config.desiredRetention,
+        maximumInterval: config.maximumInterval,
+        learningSteps: [...config.learningSteps],
+        relearningSteps: [...config.relearningSteps],
+      },
       dueTotal,
       newRemainingToday: newRemaining,
       reviewRemainingToday: reviewRemaining,

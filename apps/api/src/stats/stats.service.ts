@@ -8,6 +8,7 @@ import type {
   Heatmap,
   HeatmapQuery,
   StatsOverview,
+  WorkloadPreview,
 } from '@recallify/contracts';
 import { elapsedDays, intervalFromRetention, retrievability } from '@recallify/fsrs';
 import { addDays, dayKey, daysBetween, startOfDay } from '../common/dates';
@@ -227,6 +228,38 @@ export class StatsService {
     };
   }
 
+  /**
+   * What each retention target would cost in daily reviews.
+   *
+   * A card in REVIEW comes back about once per interval, so the steady-state
+   * load is the sum of 1/interval over those cards. It ignores lapses and new
+   * cards, which is why the UI calls it an estimate. One column is read per
+   * card and the whole slider range is computed in one pass.
+   */
+  async workload(userId: string): Promise<WorkloadPreview> {
+    const config = await this.scheduling.forUser(userId);
+    const cards = await this.prisma.card.findMany({
+      where: { userId, suspendedAt: null, state: 'REVIEW' },
+      select: { stability: true },
+    });
+
+    const points = [];
+    for (let step = 70; step <= 97; step += 1) {
+      const retention = step / 100;
+      let perDay = 0;
+      for (const card of cards) {
+        const interval = Math.min(
+          config.maximumInterval,
+          Math.max(1, intervalFromRetention(config.params, card.stability, retention)),
+        );
+        perDay += 1 / interval;
+      }
+      points.push({ retention, reviewsPerDay: perDay });
+    }
+
+    return { cardsCounted: cards.length, current: config.desiredRetention, points };
+  }
+
   async curve(userId: string, query: CurveQuery): Promise<ForgettingCurve> {
     const config = await this.scheduling.forUser(userId);
     if (query.cardId) return this.cardCurve(userId, query.cardId, config);
@@ -282,28 +315,27 @@ export class StatsService {
       config.desiredRetention,
     );
     const lastDay = dayOf(card.lastReviewedAt);
-    const span = Math.max(lastDay + interval * 1.2, 1);
-    const step = span / CURVE_RESOLUTION;
+    const end = Math.max(lastDay + interval * 1.2, lastDay + 1 / 24);
 
-    // Which review segment a given day falls in, so each sample decays from the
-    // stability that was actually in force at that moment.
+    // Sampled per segment, not evenly across the whole history. Intervals grow
+    // geometrically, so evenly spaced samples put nearly all of them in the
+    // last gap and can skip an early one entirely: a ten-minute learning step
+    // inside a two-year history falls between two samples and vanishes.
+    const perSegment = Math.max(6, Math.floor((CURVE_RESOLUTION * 2) / reviews.length));
     const points: { day: number; retrievability: number }[] = [];
-    for (let i = 0; i <= CURVE_RESOLUTION; i += 1) {
-      const day = i * step;
-      let segment = -1;
-      for (let r = 0; r < reviews.length; r += 1) {
-        if (dayOf(reviews[r]!.reviewedAt) <= day) segment = r;
-        else break;
-      }
-      if (segment < 0) continue;
 
-      const review = reviews[segment]!;
-      const since = day - dayOf(review.reviewedAt);
-      points.push({
-        day,
-        retrievability: retrievability(config.params, since, review.newStability),
-      });
-    }
+    reviews.forEach((review, index) => {
+      const from = dayOf(review.reviewedAt);
+      const next = reviews[index + 1];
+      const to = next ? dayOf(next.reviewedAt) : end;
+      for (let i = 0; i <= perSegment; i += 1) {
+        const since = ((to - from) * i) / perSegment;
+        points.push({
+          day: from + since,
+          retrievability: retrievability(config.params, since, review.newStability),
+        });
+      }
+    });
 
     return {
       cardId,
