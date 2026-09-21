@@ -16,7 +16,11 @@ async function bootstrap(): Promise<void> {
     swaggerOptions: { persistAuthorization: true },
   });
 
-  const port = app.get(ConfigService<Env, true>).get('API_PORT', { infer: true });
+  // A host that assigns the port (Vercel, most PaaS) says so through PORT.
+  // API_PORT is the local default.
+  const port =
+    Number(process.env.PORT) ||
+    app.get(ConfigService<Env, true>).get('API_PORT', { infer: true });
   await app.listen(port);
   // eslint-disable-next-line no-console
   console.log(`api listening on http://localhost:${port} (docs at /docs)`);

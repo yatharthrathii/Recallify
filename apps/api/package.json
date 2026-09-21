@@ -6,6 +6,7 @@
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main.js",
+    "vercel-build": "prisma generate && prisma migrate deploy && pnpm -w exec turbo build --filter=@recallify/api...",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "db:generate": "prisma generate",
