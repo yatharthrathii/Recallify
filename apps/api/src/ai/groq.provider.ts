@@ -18,7 +18,33 @@ export interface GroqOptions {
   readonly models: readonly string[];
 }
 
-type Fetch = typeof fetch;
+/**
+ * The slice of `fetch` this file uses, written out rather than borrowed from
+ * the global types. Node's `Response` type comes from `undici-types` through
+ * @types/node, and a build that resolves types differently (Vercel's did) sees
+ * an empty `Response` with no `ok` or `status`. Depending on a shape instead of
+ * a global makes the file compile the same everywhere, and it is all a test
+ * double has to provide.
+ */
+interface HttpResponse {
+  readonly ok: boolean;
+  readonly status: number;
+  readonly headers: { get(name: string): string | null };
+  json(): Promise<unknown>;
+}
+
+interface HttpRequest {
+  method: string;
+  headers: Record<string, string>;
+  body: string;
+  signal: AbortSignal;
+}
+
+type Fetch = (url: string, init: HttpRequest) => Promise<HttpResponse>;
+
+// The one place the global is touched. The cast is the point: see above.
+const globalFetch: Fetch = (url, init) =>
+  fetch(url, init) as unknown as Promise<HttpResponse>;
 
 interface GroqResponse {
   choices?: { message?: { content?: string | null } }[];
@@ -46,7 +72,7 @@ export class GroqProvider implements AiProvider {
 
   constructor(
     private readonly options: GroqOptions,
-    private readonly fetchFn: Fetch = fetch,
+    private readonly fetchFn: Fetch = globalFetch,
   ) {}
 
   get configured(): boolean {
@@ -82,7 +108,7 @@ export class GroqProvider implements AiProvider {
     const failures: string[] = [];
 
     for (const model of this.options.models) {
-      let response: Response;
+      let response: HttpResponse;
       try {
         response = await this.fetchFn(ENDPOINT, {
           method: 'POST',
