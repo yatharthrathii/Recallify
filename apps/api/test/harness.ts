@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import { AI_PROVIDER, type AiProvider } from '../src/ai/provider';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/bootstrap';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -30,8 +31,21 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function startHarness(): Promise<Harness> {
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+export interface HarnessOptions {
+  /**
+   * Replaces the real model. Integration tests must never spend the live
+   * free-tier quota, and CI has no key -- so the AI tests script the model's
+   * replies, including the malformed and rate-limited ones.
+   */
+  readonly aiProvider?: AiProvider;
+}
+
+export async function startHarness(options: HarnessOptions = {}): Promise<Harness> {
+  let builder = Test.createTestingModule({ imports: [AppModule] });
+  if (options.aiProvider) {
+    builder = builder.overrideProvider(AI_PROVIDER).useValue(options.aiProvider);
+  }
+  const moduleRef = await builder.compile();
 
   // Quiet by default; TEST_LOG=1 turns the app's own logging back on when a
   // failing test needs the stack behind a 500.

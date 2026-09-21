@@ -43,12 +43,18 @@ model User {
 
   isDemo Boolean @default(false)
 
+  // AI cards this user may generate per UTC day. Stored rather than hardcoded:
+  // generation is the one feature with a real marginal cost, so it is the one
+  // a paid tier would change -- and that should be an UPDATE, not a deploy.
+  aiDailyLimit Int @default(20)
+
   decks         Deck[]
   cards         Card[]
   reviews       Review[]
   refreshTokens RefreshToken[]
   stats         UserStats?
   aiUsage       AiUsage[]
+  aiReports     AiReport[]
 
   @@map("users")
 }
@@ -190,12 +196,15 @@ model UserStats {
   @@map("user_stats")
 }
 
+// One row per generation. Written BEFORE the model is called, as a
+// reservation, and corrected or deleted afterwards -- see AiService.generate
+// for why the order matters under concurrency.
 model AiUsage {
   id           String   @id @default(cuid())
   userId       String
   promptTokens Int
   outputTokens Int
-  cardsCreated Int
+  cardsCreated Int // cards charged against the daily allowance
   model        String
   createdAt    DateTime @default(now())
 
@@ -203,4 +212,25 @@ model AiUsage {
 
   @@index([userId, createdAt]) // rate-limit window query
   @@map("ai_usage")
+}
+
+// A user flagging AI output. Play requires the in-app path; "incorrect" exists
+// because a wrong card is the failure that was actually observed.
+//
+// A snapshot of the text, not a card id: drafts that were never saved have no
+// id, and a report has to outlive the card it is about.
+model AiReport {
+  id        String   @id @default(cuid())
+  userId    String
+  front     String
+  back      String
+  reason    String // offensive | incorrect | other
+  note      String?
+  model     String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("ai_reports")
 }

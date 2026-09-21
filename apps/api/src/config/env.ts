@@ -22,8 +22,23 @@ export const envSchema = z.object({
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
+  // Optional so the app, CI and the tests all boot without one. Without a key
+  // /ai/generate answers 503 and everything else works.
   GROQ_API_KEY: z.string().optional(),
-  GROQ_MODEL: z.string().default('llama-3.3-70b-versatile'),
+  // Tried in order. Each model has its own rate-limit bucket on Groq, so a
+  // fallback roughly doubles free capacity. Chosen by measurement against real
+  // output -- see docs/06-ROADMAP.md, phase 5. The previous default,
+  // llama-3.3-70b-versatile, no longer exists on Groq at all.
+  GROQ_MODELS: z
+    .string()
+    .default('openai/gpt-oss-120b,openai/gpt-oss-20b')
+    .transform((v) =>
+      v
+        .split(',')
+        .map((m) => m.trim())
+        .filter(Boolean),
+    )
+    .pipe(z.array(z.string()).min(1)),
 });
 
 export type Env = z.infer<typeof envSchema>;

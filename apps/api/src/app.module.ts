@@ -2,6 +2,7 @@ import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { AiModule } from './ai/ai.module';
 import { AuthModule } from './auth/auth.module';
 import { JwtGuard } from './auth/jwt.guard';
 import { CardsModule } from './cards/cards.module';
@@ -40,6 +41,7 @@ import { StatsModule } from './stats/stats.module';
     ReviewsModule,
     StatsModule,
     OptimizerModule,
+    AiModule,
     HealthModule,
   ],
   providers: [
