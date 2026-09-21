@@ -2,71 +2,124 @@
  * Colour tokens. The only place raw hex is allowed in this repo — everywhere
  * else ESLint rejects it. See docs/04-DESIGN-SYSTEM.md.
  *
- * Warm neutrals, deliberately. Paper in light, ink in dark. No blue-grey, and
- * no purple anywhere: the indigo/violet gradient is the single strongest
+ * Two palettes, one per theme, chosen by Yatharth from sites he liked rather
+ * than from a generator. Light is blush paper with navy ink and a raspberry
+ * accent. Dark is slate with a deep teal and the same raspberry, lifted.
+ * No purple anywhere: the indigo/violet gradient is the single strongest
  * "generated template" signal there is.
  */
 
 /** Surfaces and text. Light theme is the base definition. */
 export const light = {
-  bg: '#FAF8F5', // warm paper, never pure white
-  surface: '#FFFFFF',
-  surfaceAlt: '#F2EEE8',
-  border: '#E4DED4',
-  borderStrong: '#CFC6B8',
-  text: '#1A1714',
-  textMuted: '#6B635A',
-  textFaint: '#9A9187',
+  bg: '#EEE2DC', // blush paper. The page is tinted; the panels are lighter than it
+  surface: '#F8F1EC',
+  surfaceAlt: '#E6D6CE',
+  border: '#DDCBC1',
+  borderStrong: '#BAB2B5',
+  text: '#123C69', // navy ink, never black
+  textMuted: '#55637F',
+  textFaint: '#857F8B',
 } as const;
 
 export const dark = {
-  bg: '#12100E', // warm ink, never #000 and never blue-black
-  surface: '#1A1815',
-  surfaceAlt: '#232019',
-  border: '#2E2A24',
-  borderStrong: '#453F36',
-  text: '#F2EEE8',
-  textMuted: '#A69C8F',
-  textFaint: '#6E655A',
+  bg: '#212A31', // slate, never #000
+  surface: '#28333C',
+  surfaceAlt: '#2E3944',
+  border: '#37444F',
+  borderStrong: '#4C5C68',
+  text: '#D3D9D4',
+  textMuted: '#9DB0B4',
+  textFaint: '#748D92',
 } as const;
 
 /**
- * The memory scale — this is the product's colour.
+ * Brand colours: what is left of each palette once surfaces and text are
+ * taken. `accent` marks the thing that wants attention (a due count, a link,
+ * a focus ring). `brand` is the deep block colour behind full-bleed bands and
+ * the auth panel, with `onBrand` as the text that sits on it. `highlight` is
+ * the soft tint behind a marked word or a hovered row.
+ */
+export const brand = {
+  accent: '#AC3B61', // raspberry
+  brand: '#123C69', // navy
+  onBrand: '#EEE2DC',
+  highlight: '#EDC7B7', // peach
+} as const;
+
+export const brandOnDark = {
+  accent: '#EE8FA9', // the same raspberry, lifted until it reads on slate
+  brand: '#124E66', // deep teal
+  onBrand: '#D3D9D4',
+  highlight: '#124E66',
+} as const;
+
+/**
+ * The memory scale — this is the product's data colour.
  *
  * Retrievability (probability the user can recall a card right now) maps to
  * hue. Used by the forgetting curve, the heatmap, deck badges, and the review
  * card border. Nothing else in the app may use these hues, or they stop
- * reading as data.
- *
- * `fading` doubles as the interactive accent (buttons, links, focus rings),
- * because "about to be forgotten" is the state the whole product exists to
- * act on.
+ * reading as data. The interactive accent is deliberately NOT on this scale.
  */
 export const memory = {
   strong: '#0E7C66', // R >= 90%   deep teal
-  good: '#4A9E5C', // R 75-90%   green
-  fading: '#C88A2E', // R 50-75%   amber  <- de-facto accent
-  weak: '#B85C38', // R 25-50%   terracotta
+  good: '#3A8049', // R 75-90%   green
+  fading: '#96620F', // R 50-75%   amber, darkened until it reads on blush
+  weak: '#B1532F', // R 25-50%   terracotta
   lost: '#8C3A2E', // R < 25%    rust, never fire-engine red
 } as const;
 
-/** Amber reads too light on paper. Darkened variant for light backgrounds. */
-export const memoryOnLight = {
-  ...memory,
-  fading: '#A66F1C',
-  good: '#3D8850',
+/** Kept as an alias: the base scale is already tuned for the light theme. */
+export const memoryOnLight = memory;
+
+/**
+ * The deep end of the scale disappears against slate. Lifted for dark
+ * backgrounds so every band stays legible as data; the hue of each band is
+ * unchanged, only its lightness.
+ */
+export const memoryOnDark = {
+  strong: '#3DB39A',
+  good: '#5DB070',
+  fading: '#D9993A',
+  weak: '#DD8562',
+  lost: '#CC6A58',
 } as const;
 
 /**
- * System feedback only. Kept desaturated and deliberately distinct from the
- * memory scale so the two are never confused.
+ * System feedback only. Kept distinct from the memory scale so the two are
+ * never confused.
  */
 export const status = {
-  info: '#3A6B8C',
-  success: '#3D8850',
-  warning: '#A66F1C',
-  danger: '#A33A2C',
+  info: '#124E66',
+  success: '#3A8049',
+  warning: '#96620F',
+  danger: '#A8321F',
 } as const;
+
+export const statusOnDark = {
+  info: '#6FB0C9',
+  success: '#5DB070',
+  warning: '#D9993A',
+  danger: '#E57362',
+} as const;
+
+/**
+ * Deck labels. A small swatch beside a deck's name, nothing more.
+ *
+ * Deliberately chalky and low in saturation, so they cannot be mistaken for
+ * the memory scale: a user picking "teal" for a deck must not look like that
+ * deck is well remembered. They identify, they never measure.
+ */
+export const deck = {
+  amber: '#D4B06A',
+  teal: '#7FAFA8',
+  clay: '#C49A84',
+  moss: '#9AAE82',
+  slate: '#8F9AA6',
+  sand: '#CFC2A8',
+} as const;
+
+export type DeckColorName = keyof typeof deck;
 
 export type MemoryLevel = keyof typeof memory;
 
@@ -79,4 +132,15 @@ export function memoryLevel(retrievability: number): MemoryLevel {
   return 'lost';
 }
 
-export const color = { light, dark, memory, memoryOnLight, status } as const;
+export const color = {
+  light,
+  dark,
+  brand,
+  brandOnDark,
+  memory,
+  memoryOnLight,
+  memoryOnDark,
+  status,
+  statusOnDark,
+  deck,
+} as const;
