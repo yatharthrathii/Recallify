@@ -1,5 +1,21 @@
 {
   "extends": "../config/tsconfig.build.json",
-  "compilerOptions": { "rootDir": "./src", "outDir": "./dist" },
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    // ES modules, unlike every other package here. The others compile to
+    // CommonJS because NestJS loads them with require(). Nothing in the API
+    // imports core: its only consumers are bundlers (Next now, Metro later).
+    //
+    // As CommonJS it broke the app outright. Its require('@tanstack/react-query')
+    // resolved to that library's CJS build while the web app's own import
+    // resolved to the ESM build: one package on disk, two module instances, two
+    // React contexts. Every hook in here then threw "No QueryClient set" under a
+    // provider that was plainly there. Emitting ESM puts core and the app on the
+    // same build of every dependency.
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
   "include": ["src/**/*.ts"]
 }

@@ -2,12 +2,15 @@
  * Logic that mobile will also need. Nothing in here may import React DOM,
  * Next.js, or any web-only API.
  *
- * This package is the reason the Android app costs ~50-60% of what the web app
- * cost instead of 100%. Everything above the render layer lives here: the
- * review session state machine, query keys, TanStack Query hooks, formatters.
- * If that discipline slips, mobile doubles in price -- see
- * docs/02-ARCHITECTURE.md.
- *
- * Phase 6 fills this in alongside the web UI.
+ * This package is the reason the Android app costs roughly half of what the
+ * web app cost instead of all of it. Everything above the render layer lives
+ * here: the API client, query keys, the review session state machine, the
+ * outbox, formatters. The React Query hooks are under `@recallify/core/react`
+ * so that this entry point stays free of React.
  */
-export const PACKAGE_NAME = '@recallify/core';
+export * from './api/http';
+export * from './api/client';
+export * from './format';
+export * from './keys';
+export * from './outbox';
+export * from './session';
