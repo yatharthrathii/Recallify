@@ -28,12 +28,15 @@ model User {
   dailyReviewLimit  Int      @default(200)
   paramsOptimizedAt DateTime?
 
+  aiDailyLimit  Int      @default(20)   // stored, so a paid tier is an UPDATE
+
   decks         Deck[]
   cards         Card[]
   reviews       Review[]
   refreshTokens RefreshToken[]
   stats         UserStats?
   aiUsage       AiUsage[]
+  aiReports     AiReport[]
 }
 
 model RefreshToken {
@@ -150,6 +153,20 @@ model AiUsage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   @@index([userId, createdAt])           // rate-limit window query
 }
+
+// A snapshot of flagged AI output. Text, not a card id: a draft that was
+// never saved has no id, and a report has to outlive the card.
+model AiReport {
+  id        String   @id @default(cuid())
+  userId    String
+  front     String
+  back      String
+  reason    String   // offensive | incorrect | other
+  note      String?
+  model     String?
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 ```
 
 ### v1 bugs this schema fixes, explicitly
@@ -200,6 +217,8 @@ POST   /auth/login
 POST   /auth/refresh          rotation + reuse detection
 POST   /auth/logout           revokes the whole family
 GET    /auth/me
+PATCH  /auth/me               name, retention target, daily limits
+DELETE /auth/me               needs the password again. Cascades to everything
 
 GET    /decks                 cursor paginated
 POST   /decks
@@ -215,15 +234,17 @@ PATCH  /cards/:id
 DELETE /cards/:id
 POST   /cards/:id/suspend
 
-GET    /review/queue?deckId=&limit=   the due queue
+GET    /review/queue?deckId=&limit=   the due queue, with full card state and the
+                                      scheduling config, so clients schedule locally
 POST   /review                        submit one. The body's `id` is the key.
 POST   /review/batch                  offline sync (see 05)
 GET    /review/history?cardId=
 GET    /review/explain/:cardId        "why this card?" — S, D, R, forget date,
                                       and what each of the four buttons would do
 
-POST   /ai/generate           phase 5
-GET    /ai/usage              phase 5
+POST   /ai/generate           topic|notes -> drafts. Saves nothing.
+GET    /ai/usage              today's allowance and when it resets
+POST   /ai/report             flag a draft or card as offensive or wrong
 
 GET    /optimizer/status      enough history yet? cooldown? using fitted params?
 POST   /optimizer/run         fit + backtest in one call. Saves nothing.
@@ -234,6 +255,7 @@ GET    /stats/overview        xp, level, streak, measured retention
 GET    /stats/heatmap?days=365
 GET    /stats/forecast?days=30&deckId=
 GET    /stats/curve?cardId=|deckId=   forgetting curve series
+GET    /stats/workload        reviews/day at every retention target, one response
 
 POST   /import/anki           phase 8
 POST   /import/csv            phase 8
@@ -278,29 +300,57 @@ with the user's. That is a real, small, defensible security design.
 ## AI generation contract
 
 ```ts
-// packages/contracts/ai.ts
-export const GeneratedCard = z.object({
-  front: z.string().min(3).max(300),
-  back:  z.string().min(1).max(2000),
-  hint:  z.string().max(200).optional(),
+// packages/contracts/src/ai.ts
+export const generatedCard = z.object({
+  front: z.string().trim().min(3).max(300),
+  back:  z.string().trim().min(1).max(2000),
+  hint:  z.string().trim().max(200).optional(),
 });
-export const GenerateResponse = z.object({
-  cards: z.array(GeneratedCard).min(1).max(20),
-});
+// The envelope the model returns. Cards are validated one at a time, so one
+// overlong answer costs one card rather than the generation.
+export const generateResponse = z.object({ cards: z.array(z.unknown()) });
 ```
 
-Pipeline: prompt → Groq → parse → **validate with Zod** → reject and retry once
-on failure → persist. The model never writes to the database directly; only
-Zod-validated output does.
+Pipeline:
 
-Caps, enforced in `ai` module before the call:
+```
+check deck ownership            a stranger's deck costs nothing
+reserve the allowance           row lock on the user, FOR UPDATE NOWAIT
+prompt -> Groq                  gpt-oss-120b, then gpt-oss-20b on any failure
+parse, validate each card       drop invalid and repeated cards
+  none usable? retry once       with a firmer instruction
+settle the reservation          to the cards actually returned, or to zero
+return drafts                   nothing is saved
+```
+
+**Drafts, not cards.** The user saves what is worth keeping through
+`POST /cards/bulk` with `source: 'AI'`. The model never writes to the database,
+and neither does this endpoint: measured output included a confident wrong
+card, and a wrong card saved straight into a schedule gets memorised.
+
+**Reserve, then call, then settle.** Checking the allowance, calling the model
+and recording afterwards would let simultaneous requests all see the full
+allowance. The check and the charge happen together, first, in one short
+transaction. A failure settles to zero cards rather than deleting the row, so
+the allowance is refunded but the attempt still counts per minute.
+
+Caps:
 
 | Limit | Value | Why |
 |---|---|---|
 | Per request | 20 cards | |
-| Per user per day | 100 cards | |
-| Per user per minute | 3 requests | Groq is 30 rpm account-wide |
-| Demo account | 5 cards/day | recruiters can try it; nobody can drain it |
+| Per user per day | 20 cards | stored in `User.aiDailyLimit`. At 10-20 cards a request that is one or two requests a user, so one model's 1,000 a day serves roughly 500-1,000 users, and the fallback about doubles it |
+| Per user per minute | 3 requests, failed ones included | counted in the database, because serverless instances share no memory |
+| Per user at once | 1 reservation | a second simultaneous request is refused, not queued |
+| Notes length | 10,000 characters | ~2,500 tokens, against 8,000 tokens a minute per model for the whole app |
+| Demo account | 5 cards/day | phase 7: set through the same stored allowance |
+
+Status codes: `429` for the daily allowance, the per-minute limit and a
+simultaneous request; `422` when the model returns no usable cards; `502` when
+it returns something unparseable twice; `503` when every model is busy or no
+key is configured. Every failure after the allowance has been reserved says
+"Nothing was charged", and it is true; the ones before it -- a stranger's deck,
+the limits, a missing key -- never charged anything to begin with.
 
 The per-user daily figure is read from the user's stored allowance rather than
 a constant. Generation is the only feature with a real marginal cost, so it is

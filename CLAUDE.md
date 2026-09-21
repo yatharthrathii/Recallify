@@ -24,9 +24,9 @@ That history is why the honesty rules below are not negotiable.
 
 - `../recallify/` — v1. React 19 + Vite + Firebase RTDB. **Not** being upgraded.
   Its README has been corrected; the code is otherwise untouched.
-- Phase 0 done, except one item only Yatharth can do: **the v1 OpenRouter key is
-  still live** and readable in the deployed bundle. It must be revoked at
-  openrouter.ai/keys.
+- Phase 0 done, except one item only Yatharth can do: **the GitHub repo
+  description still claims spaced repetition and the OpenAI API.** It is a
+  repository setting, not a file. (The v1 OpenRouter key has been revoked.)
 - Phase 1 done. Workspace builds; lint, typecheck, tests and CI are green.
 - Phase 2 done. `packages/fsrs` is complete: the DSR memory model (verified
   against ts-fsrs) plus the scheduler state machine — `schedule`, `explain`,
@@ -40,15 +40,125 @@ That history is why the honesty rules below are not negotiable.
   stats (xp, level, streak, heatmap, forecast, forgetting curve) and the
   optimizer endpoints. 30 of 33 operations publish a response schema at
   `/docs-json`; the other three are 204s with no body.
-  **212 tests** across the workspace, 34 of them integration tests that run
-  against a real Postgres both locally and in CI.
-- Next: phase 5, AI generation.
+  34 integration tests run against a real Postgres both locally and in CI.
+- Phase 5 done. `/ai/generate` drafts cards through Groq (`gpt-oss-120b`, with
+  `gpt-oss-20b` as fallback), charges a stored per-user daily allowance, and
+  saves nothing — the user saves drafts through `/cards/bulk`. `/ai/usage` and
+  `/ai/report` (the in-app flagging Google Play requires). Verified end to end
+  against the live Groq API. 32 of 36 operations publish a response schema;
+  the other four are 204s.
+- Phase 6 done, with two items left open (below). `apps/web` is the product:
+  landing page with a live engine demo, auth, Today, decks, deck detail with
+  the deck curve and card table, card editor with each card's own curve, AI
+  draft review, the keyboard-first review session, stats with heatmap, forecast
+  and the optimizer comparison, settings with the priced retention slider, a
+  command palette, light and dark themes. `packages/core` holds everything
+  above the render layer for mobile to reuse. The API gained settings update,
+  account deletion, `/stats/workload` and the scheduling config on the queue.
+  **275 tests**, plus a 20-step browser flow run against the real stack.
+  Open: the offline review shell (service worker) and View Transitions.
+- Next: phase 7, deploy.
+
+Still missing from the API, found while auditing before phase 6: **password
+reset** (needs an email provider) and a **rate limit on login**.
+
+The roadmap gained three phases after a monetization review in September 2026:
+exam-day prediction (inside 8), live decks (8b), and charging (10, only once
+there are users). Ads were evaluated and rejected, and iOS is deferred until
+there is revenue to set the $99/year against — both with numbers, in
+`01-PRODUCT.md`.
 
 Phases were re-ordered after a monetization review: Anki `.apkg` import and the
 Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
 brings an existing Anki user in — without it they would have to abandon years of
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
+
+### Notes carried out of phase 6
+
+- **The web app never holds a token.** `app/api/auth/*` moves tokens into
+  httpOnly cookies; `app/api/v1/[...path]` reads the access cookie and attaches
+  the bearer. `document.cookie` is empty and nothing is in localStorage, and the
+  browser flow asserts both.
+- **The proxy does not refresh, the client does, once.** Refresh tokens rotate
+  and a replayed one revokes the whole family, so parallel refreshes would sign
+  a healthy session out. `Transport` in core single-flights within a tab, and
+  `navigator.locks` extends that across tabs.
+- **`packages/core` compiles to ES modules; every other package is CommonJS.**
+  As CJS its `require('@tanstack/react-query')` loaded that library's CJS build
+  while the app imported the ESM build: one package on disk, two instances, two
+  React contexts, and every hook threw "No QueryClient set" under a provider
+  that was plainly there. Same dual-package hazard as the ZodError one in phase
+  4. Nothing in the API imports core, so ESM is safe there.
+- **Unlayered CSS beats Tailwind utilities.** A hand-written `.pb-safe` class
+  silently overrode `sm:pb-8` on the same element, and the review screen's last
+  line was cut off. Custom one-offs are arbitrary utilities now
+  (`pb-[env(safe-area-inset-bottom)]`), not classes in globals.css.
+- **The curve needed two honest axis choices.** Plotted 0-100% on a linear time
+  axis, a card held at 90% is a flat line at the top with its first reviews
+  crushed into the left edge, because intervals grow geometrically. `yMin` fits
+  the data and `xScale="sqrt"` compresses the far end; both are labelled on the
+  chart. The API samples a card's curve per review segment for the same
+  reason: evenly spaced samples skip a ten-minute learning step entirely.
+- **Looking at the screen found what typecheck could not.** New cards read
+  "12m overdue" (they are not late, they are not started), the Today page
+  offered "Create a deck" while decks were still loading, and tiles showed
+  "0 cards" before data arrived. All three were true to the types and false to
+  the user.
+- **The first theme was rejected and replaced.** Warm paper, Fraunces and an
+  amber accent read as generated, and the animations (240ms, 8px) were too
+  quiet to be seen at all. The theme is now two palettes Yatharth chose: blush,
+  navy and raspberry in light; slate and deep teal in dark. Display type is
+  Bricolage Grotesque. Motion is sized to be noticed; see `04-DESIGN-SYSTEM.md`.
+- The accent (raspberry) is deliberately off the memory scale, so no control
+  looks like a data point. Deck label colours are a separate chalky palette in
+  tokens so "teal deck" never reads as "well remembered".
+- Next 16 writes `AGENTS.md` and `CLAUDE.md` into the app on `next dev`.
+  `agentRules: false` in next.config stops it; this repo has its own.
+- UI copy contains no em or en dashes and none of the banned words in
+  `04-DESIGN-SYSTEM.md`. Yatharth asked for this explicitly.
+- GSAP was allowed but not added. `motion` covers every animation (word
+  reveals, scroll reveals, count-ups, path draw, parallax, layout springs), and
+  a second animation library would be weight with no job to do. Toasts are
+  Sonner, restyled. Shared motion primitives are in `components/motion`.
+- `.eyebrow` is unlayered CSS, so recolouring one needs Tailwind's important
+  suffix (`text-on-brand/60!`). Same trap as `.pb-safe` above.
+
+### Notes carried out of phase 5
+
+- **Check what a provider actually serves before designing around it.** The
+  plan named Llama 3.3 70B with a Gemini 2.0 Flash fallback. Listing the
+  account's Groq models showed Llama was gone entirely, and Gemini 2.0 Flash
+  had been retired months earlier. Published free-tier limits were wrong too;
+  the real ones (1,000 requests/day, 8,000 tokens/minute, per model) came from
+  the response headers.
+- **Choose the model by reading its output.** Parse success was 100% for every
+  candidate, so it could not separate them. Reading all the cards did: 20b made
+  about three factual errors in twenty, 120b about one across every run.
+- **Generation returns drafts.** A wrong card saved straight into a schedule is
+  memorised. The 120b model wrote "Article 12 lists the Fundamental Rights".
+- **A test that passes on the first run has not been shown to test anything.**
+  The allowance race test passed with the row lock deleted in three different
+  forms. Over HTTP the requests never overlapped; against a cold
+  Prisma pool the second transaction could not start until the first had
+  committed, because opening a Neon connection takes over a second. Warming the
+  pool made the race real — all six through, 120 cards against a limit of 20 —
+  and the test now fails without the lock, three runs out of three.
+- **A waiting lock is a held connection.** The first lock was a plain
+  `FOR UPDATE`. Under six simultaneous requests every waiter held a pooled
+  connection, and four ran past Prisma's default 5-second interactive
+  transaction timeout and came back as 500s (P2028). It is `FOR UPDATE NOWAIT`
+  with an explicit transaction timeout, and a second simultaneous generation is
+  refused with a 429.
+- **Failures settle to zero, they are not deleted.** Deleting a failed
+  reservation would refund it from the per-minute limit as well as the daily
+  one, and a request that always fails could then hit the provider for free.
+- **Rate limits live in the database.** The API is meant for serverless
+  instances that share no memory; an in-process counter would give each one
+  its own allowance.
+- Integration tests never call Groq. `startHarness({ aiProvider })` replaces
+  the provider, so CI needs no key and spends no quota. The provider's fallback
+  chain is tested separately with `fetch` replaced.
 
 ### Notes carried out of phase 4
 

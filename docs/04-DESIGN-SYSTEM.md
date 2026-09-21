@@ -32,7 +32,7 @@ exact template look we are trying to escape.
 | 3-column feature grid, lucide icon in a circle above each | Instantly recognisable filler |
 | Every block wrapped in a rounded card with `shadow-2xl` | Floaty, weightless, generic |
 | Inter as the only typeface | The default of defaults |
-| Centered hero with a big blurred colour blob behind it | Template |
+| Centered hero with a big blurred colour blob behind it | Template. The landing disc is flat colour with a hard edge, off to one side |
 | More than one accent hue on a screen | Reads as decoration, not meaning |
 
 ### What we do instead
@@ -50,32 +50,49 @@ exact template look we are trying to escape.
 
 ## Color
 
-Warm neutrals, not blue-grey. Paper in light, ink in dark.
+Two palettes, one per theme. Yatharth picked both from sites he liked, not from
+a generator, after the first theme (warm paper, serif, amber) read as generic.
+Light is blush paper with navy ink and a raspberry accent. Dark is slate with a
+deep teal block colour and the same raspberry, lifted.
 
 ```ts
 // packages/tokens/color.ts
 export const light = {
-  bg:        '#FAF8F5',   // warm paper, never pure white
-  surface:   '#FFFFFF',
-  surfaceAlt:'#F2EEE8',
-  border:    '#E4DED4',
-  borderStrong:'#CFC6B8',
-  text:      '#1A1714',
-  textMuted: '#6B635A',
-  textFaint: '#9A9187',
+  bg:        '#EEE2DC',   // blush paper. The page is tinted, panels are lighter
+  surface:   '#F8F1EC',
+  surfaceAlt:'#E6D6CE',
+  border:    '#DDCBC1',
+  borderStrong:'#BAB2B5',
+  text:      '#123C69',   // navy ink, never black
+  textMuted: '#55637F',
+  textFaint: '#857F8B',
 };
 
 export const dark = {
-  bg:        '#12100E',   // warm ink, never #000 and never blue-black
-  surface:   '#1A1815',
-  surfaceAlt:'#232019',
-  border:    '#2E2A24',
-  borderStrong:'#453F36',
-  text:      '#F2EEE8',
-  textMuted: '#A69C8F',
-  textFaint: '#6E655A',
+  bg:        '#212A31',   // slate, never #000
+  surface:   '#28333C',
+  surfaceAlt:'#2E3944',
+  border:    '#37444F',
+  borderStrong:'#4C5C68',
+  text:      '#D3D9D4',
+  textMuted: '#9DB0B4',
+  textFaint: '#748D92',
 };
+
+export const brand       = { accent: '#AC3B61', brand: '#123C69', onBrand: '#EEE2DC', highlight: '#EDC7B7' };
+export const brandOnDark = { accent: '#EE8FA9', brand: '#124E66', onBrand: '#D3D9D4', highlight: '#124E66' };
 ```
+
+- `accent` marks what wants attention: a due count, a link, a focus ring, the
+  hover state of the primary button. It is **not** on the memory scale.
+- `brand` is the full-bleed block colour: the Today panel, the auth side panel,
+  the landing marquee and demo band. One block per screen.
+- `highlight` is the flat disc behind the landing headline and the closing band.
+- A fixed SVG grain sits over the whole page at 5 to 7% so flat colour reads as
+  a material.
+
+Every pairing was measured: body text is 8.8:1 in light and 10.2:1 in dark,
+muted text 4.8:1 and 6.5:1, the accent 4.7:1 and 6.3:1.
 
 ### The memory scale — this is the product's color
 
@@ -85,16 +102,16 @@ during review. **Nothing else in the app may use these hues.**
 
 ```ts
 export const memory = {
-  strong:   '#0E7C66',  // R >= 90%  deep teal   — solid
-  good:     '#4A9E5C',  // R 75-90%  green
-  fading:   '#C88A2E',  // R 50-75%  amber       — the app's de-facto accent
-  weak:     '#B85C38',  // R 25-50%  terracotta
+  strong:   '#0E7C66',  // R >= 90%  deep teal
+  good:     '#3A8049',  // R 75-90%  green
+  fading:   '#96620F',  // R 50-75%  amber, darkened to read on blush
+  weak:     '#B1532F',  // R 25-50%  terracotta
   lost:     '#8C3A2E',  // R < 25%   rust        — never fire-engine red
 };
 ```
 
-Amber (`fading`) doubles as the interactive accent — buttons, focus rings, links
-— because "about to be forgotten" is the state the whole product exists to act on.
+`memoryOnDark` lifts every band for slate. The interactive accent used to be
+the amber band; it is now raspberry, so no control ever looks like a data point.
 
 Status colors (`success`/`error`/`info`) are separate, desaturated, and used only
 for system feedback. They never appear near the memory scale.
@@ -112,17 +129,17 @@ Never let a color's only definition live inside a media query.
 
 ```ts
 export const font = {
-  display: '"Fraunces", "Iowan Old Style", Georgia, serif',
+  display: '"Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif',
   ui:      '"IBM Plex Sans", system-ui, -apple-system, sans-serif',
   mono:    '"IBM Plex Mono", ui-monospace, "SF Mono", monospace',
 };
 ```
 
-**Fraunces** — variable serif with optical-size and `WONK` axes. It has a real
-voice and no template ever ships with it. Set `WONK` to 0-ish and `opsz` high for
-large headings so it reads editorial rather than novelty. If it ever feels too
-characterful for a screen, **Instrument Serif** is the restrained substitute —
-but do not fall back to Inter for display.
+**Bricolage Grotesque** — variable grotesque with an optical-size axis. Slightly
+irregular on purpose, which is what stops a large headline looking typeset by a
+template. Always tight (`-0.035em`), always large, line-height near 1. It
+replaced Fraunces: a warm serif on cream paper had become a recognisable
+generated look of its own. Do not fall back to Inter for display.
 
 **IBM Plex Sans** for all interface text. More character than Inter, and it pairs
 natively with Plex Mono, which keeps the system coherent for free.
@@ -136,9 +153,9 @@ All three load from Google Fonts with `display: swap` and a real fallback stack.
 
 | Token | Size / line-height | Face | Use |
 |---|---|---|---|
-| `display` | 48/52 | Fraunces | landing h1 only |
-| `h1` | 34/40 | Fraunces | page title |
-| `h2` | 26/32 | Fraunces | section |
+| `display` | 64/64, fluid to 124 | Bricolage | landing h1 only |
+| `h1` | 34 to 48 | Bricolage | page title |
+| `h2` | 26/32 | Bricolage | section |
 | `h3` | 20/28 | Plex Sans 600 | subsection |
 | `body` | 16/26 | Plex Sans | prose |
 | `ui` | 14/20 | Plex Sans | controls, labels |
@@ -177,33 +194,41 @@ genuinely float above the page — dialogs, the command palette, popovers.
 
 ## Motion
 
-Motion directs attention. It is never ambient and it never loops.
+Things arrive; they do not just appear. The first version of these tokens was
+so restrained (240ms, 8px) that Yatharth could not see any animation at all, so
+they are now sized to be noticed. One library does all of it: `motion`.
+Primitives live in `apps/web/components/motion`.
 
 ```ts
-export const motion = {
-  instant: 90,    // hover, focus, press
-  fast:    160,   // reveal, dropdown, tooltip
-  base:    240,   // page / view transition
-  slow:    420,   // curve draw-on, once per mount
-  spring:  { type: 'spring', stiffness: 320, damping: 30 },  // card flip only
-  ease:    [0.22, 1, 0.36, 1],   // easeOutQuint — decisive, no bounce
-};
+export const duration = { instant: 120, fast: 220, base: 520, slow: 900, draw: 1400 };
+export const rise = 28;                    // px a block travels as it rises in
+export const ease = [0.16, 1, 0.3, 1];     // easeOutExpo, every entrance
 ```
 
 | Interaction | Treatment |
 |---|---|
-| Card flip | Spring, 3D `rotateY`, `transform` only |
-| Next card | View Transition, 240ms slide + fade |
-| Rating press | 90ms scale to 0.97, then release |
-| Forgetting curve | Path draws left-to-right over 420ms **once**, then static |
-| Heatmap | Cells fade in on a 6ms stagger; capped at 300ms total |
+| Headlines (landing, page titles) | Pushed up through a clipped slot, a word at a time |
+| Blocks and sections | 28px rise + fade, once, when scrolled into view |
+| Lists, stat tiles | Children staggered 60 to 80ms apart |
+| Numbers | Count up from zero on first sight, glide on change |
+| Forgetting curve | Line draws over 1.4s, markers pop as the line reaches them |
+| Heatmap | Cells scale in as a wave across the year |
+| Forecast bars | Grow from the baseline, 30ms apart |
+| Card flip | Spring, 3D `rotateY` |
+| Next card | Old card thrown left, new one dealt in from the right, turned 2.5 degrees |
+| Session complete | A ring closes and a tick is drawn |
+| Primary button | Lifts 2px and turns from ink to accent |
+| Sidebar | Active pill slides between items on a spring |
+| Theme change | Colours cross-fade over 420ms |
+| Landing | Header drops in, disc parallax, facts marquee (the one loop) |
+| Toasts | Sonner, restyled as an ink slab; errors turn the whole slab |
 | Skeleton | Opacity pulse 1.6s. No sweeping shimmer gradient |
-| Page enter | 8px rise + fade, 240ms |
 
-Animate `transform` and `opacity` only. Any animation touching layout is a bug.
+Animate `transform`, `opacity` and `pathLength` only. Any animation touching
+layout is a bug.
 
-`prefers-reduced-motion: reduce` → all durations to 0 except opacity fades, which
-drop to 90ms. The curve renders complete rather than drawing.
+`prefers-reduced-motion: reduce` → `MotionConfig reducedMotion="user"` drops all
+movement, CSS durations collapse, and the curve renders complete.
 
 ---
 

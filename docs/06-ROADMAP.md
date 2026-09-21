@@ -7,22 +7,22 @@ Estimates assume part-time work alongside a full-time job.
 
 ---
 
-## Phase 0 — Stop the bleeding (1 day) · NOT STARTED
+## Phase 0 — Stop the bleeding (1 day) · done, one item open
 
 Do this before writing any v2 code.
 
-- [ ] **Revoke the OpenRouter key.** It is currently readable in the deployed
-      bundle at `recallify-fawn.vercel.app/assets/index-*.js`. Anyone can extract
-      and spend it. This is live right now.
-- [ ] Remove `VITE_OPENROUTER_API_KEY` from the client. Any AI call belongs
-      server-side, always.
+- [x] **Revoke the OpenRouter key.** It was readable in the deployed bundle at
+      `recallify-fawn.vercel.app/assets/index-*.js`. Revoked by Yatharth.
+- [ ] ~~Remove `VITE_OPENROUTER_API_KEY` from the client.~~ Not done, on
+      purpose: v1's code is frozen, and the key those two call sites read is
+      revoked, so what remains is inert. Every v2 AI call is server-side.
 - [ ] Fix the GitHub description and README on the existing repo:
-  - remove the **"spaced repetition"** claim — there is no such code
-  - "Storage: localStorage" → it is Firebase Realtime DB over REST
-  - "State: useState, useEffect" → it is Context API
-  - describe the AI honestly: OpenRouter + DeepSeek, client-side (and note it is
-    being moved server-side in v2)
-- [ ] Add a short "v2 in progress" note pointing at this `docs/` folder.
+  - [x] README rewritten — the false claims removed, a "What it does not do"
+        section and a list of known issues added
+  - [ ] **The GitHub repo description still claims spaced repetition and the
+        OpenAI API.** It is a repository setting, not a file, so only Yatharth
+        can change it. This is the one open item.
+- [x] Add a short "v2 in progress" note — the top of v1's README.
 
 Everything else in this roadmap is optional. **This phase is not.** The whole
 rebuild exists because the description got ahead of the code; leaving it that way
@@ -111,12 +111,41 @@ undone.
 
 ---
 
-## Phase 5 — AI (2 days)
+## Phase 5 — AI (2 days) · done
 
-- `POST /ai/generate` — Groq (Llama 3.3 70B), Gemini fallback
+- `POST /ai/generate` — Groq, `gpt-oss-120b` with `gpt-oss-20b` as fallback
 - Zod-validated structured output; one retry on parse failure; reject otherwise
 - Rate limits and the per-user daily cap from `03`
 - `AiUsage` logging for the cost chart
+- `POST /ai/report` — the in-app path Google Play requires for flagging AI output
+
+### What measurement changed
+
+The plan above originally said "Llama 3.3 70B, Gemini fallback". Both were wrong
+by the time the code was written, and neither was caught by reading about it.
+
+- **Llama 3.3 70B no longer exists on Groq.** Neither does Llama 3.1 8B. Listing
+  the account's models returned the gpt-oss pair, a Qwen model and some speech
+  models. Gemini 2.0 Flash, the planned fallback, was retired in March 2026.
+- **The real limits are lower than published summaries said.** Read off this
+  account's response headers: 1,000 requests a day and 8,000 tokens a minute,
+  per model. Notes were capped at 10,000 characters as a result.
+- **Qwen was ruled out on one number**: an output limit of 1,000 tokens a
+  minute. A single ten-card generation used 618 of them; the next request was
+  refused.
+- **120b over 20b, by reading the cards.** Both returned ten valid cards out of
+  ten in every run. Reading all forty from one comparison: 20b got about three
+  facts wrong (Article 15 for public employment, which is Article 16; calling
+  oxaloacetate an electron carrier) and ignored "keep answers short"; 120b got
+  about one wrong across all runs. Four topics is not a benchmark, and the
+  choice is one environment variable.
+- **The fallback is nearly free capacity.** Each model has its own rate-limit
+  bucket, so trying the second on a 429 roughly doubles what the free tier
+  serves.
+- **Generation returns drafts, not cards.** The 120b model wrote "Article 12
+  lists the Fundamental Rights" — Article 12 defines the State. A confident
+  wrong card saved straight into a review schedule gets memorised, so the user
+  reads the drafts and saves what is worth keeping.
 
 **Build the quota as a stored allowance, not a hardcoded number.** Generation is
 the only feature with a real marginal cost, so it is the only honest candidate
@@ -129,20 +158,46 @@ are decisions for after the thing has users.
 
 **Ships:** honest AI generation, server-side, capped.
 
+The quota test was the most instructive failure of the phase. The allowance is
+reserved under a row lock before the model is called, and a test was written to
+prove two simultaneous requests cannot both spend it. It passed. It also passed
+with the lock deleted: over HTTP the requests never overlapped, and against a
+cold connection pool the second reservation could not start until the first had
+committed. Warming the pool made the race real — six requests, all six through,
+120 cards charged against a limit of 20 — and the test now fails without the
+lock every time. The lock itself then had to change: queued requests each held
+a pooled connection while they waited, and four of six ran past the
+transaction timeout and came back as 500s. It is `FOR UPDATE NOWAIT` now, and a
+second simultaneous generation for the same account is refused at once.
+
 ---
 
-## Phase 6 — Web (6 days)
+## Phase 6 — Web (6 days) · done, two items open
 
-- Design tokens → Tailwind `@theme`; `PageShell`; Button/Card/Field/Dialog
-- Auth pages, deck list, card editor
-- **Review session** — keyboard-only, local FSRS, <50ms advance, View Transitions
-- **Forgetting curve** — the signature component, built by hand
-- **"Why this card?"** panel
-- **Retention target slider** with live workload cost
-- Heatmap, forecast, optimizer before/after
-- Skeletons, empty states, error states for every route
-- Command palette
-- PWA manifest + offline review shell
+- [x] Design tokens → Tailwind `@theme`; `PageShell`; Button/Field/Dialog
+- [x] Auth pages, deck list, card editor
+- [x] **Review session** — keyboard-only, local FSRS. The next card is on
+      screen before the request leaves; answers go through an outbox in
+      localStorage and are resent until the server has them
+- [x] **Forgetting curve** — the signature component, built by hand
+- [x] **"Why this card?"** panel — computed in the browser by the engine, no
+      request
+- [x] **Retention target slider** with live workload cost
+- [x] Heatmap, forecast, optimizer before/after
+- [x] Skeletons, empty states, error states for every route
+- [x] Command palette
+- [x] PWA manifest
+- [ ] **Offline review shell.** The outbox survives a dropped connection
+      mid-session, but there is no service worker, so the app does not open
+      offline. Not claimed anywhere in the UI.
+- [ ] **View Transitions.** Card changes use `motion` instead. Same effect,
+      and it respects reduced motion through one config.
+
+Verified by driving the real stack in a browser: 20 steps from "signed-out
+visit is redirected" through a full keyboard review session to "deleted account
+cannot sign in", with results checked against the API rather than the screen.
+Every page was also screenshotted at 1440 and 390 wide in both themes, with a
+horizontal-overflow measurement on each.
 
 **Ships:** the product, usable.
 
@@ -204,11 +259,62 @@ Contents:
 - Leeches: cards failing repeatedly, ranked by time wasted
 - Per-deck cost: which deck is buying the least retention per review
 
+### Exam-day prediction
+
+Every student preparing for a fixed date is asking one question: what will I
+still know on the day? The fitted model can answer it directly — project each
+card's retrievability forward to the exam date and sum.
+
+```
+GET /stats/exam?date=2027-05-05&deckId=
+    expected cards recalled on that date, with a range
+    the cards most likely to be forgotten, ranked
+    the reviews between now and then that would move the number most
+```
+
+It is honest only if it is calibrated: the backtest already measures whether
+predicted recall matches what the user actually recalled, and the prediction
+should be shown with that calibration error beside it rather than as a single
+confident number. Below `MIN_REVIEWS` it is shown with the published defaults
+and labelled as such.
+
+This is new presentation over existing mathematics, which is why it lives here
+and not in its own phase.
+
 The engine for all of this exists. Phase 8 is presentation and the importer,
 not new algorithms.
 
 **Ships:** a reason for an existing Anki user to show up, and the first
 candidate for a paid tier.
+
+---
+
+## Phase 8b — Live decks (2 weeks)
+
+A deck other people subscribe to, which its author keeps improving — without
+anyone's review history being reset when a card is corrected.
+
+This is what AnkiHub charges $5–10 a month for, to more than 100,000 medical
+students, on top of free Anki. It exists as a business because in Anki it is
+hard: updating a shared deck and keeping each subscriber's scheduling is
+painful. Here it is mostly already true. Card content and memory state are
+separate — `Review` is an append-only log and a card's FSRS state is a cache of
+it — so editing a card's text has never touched its schedule.
+
+What is new:
+
+- A published deck and a subscription to it
+- Card identity that survives an author's edit: a subscriber's copy points at
+  the source card, and a text change propagates while stability, difficulty
+  and the log stay with the subscriber
+- Additions and deletions from the author arrive as new cards and as
+  suspensions — never as deletions of a subscriber's history
+- A changelog per deck, so a subscriber can see what changed and why
+
+Content is the harder half. A live deck is only worth subscribing to if
+someone keeps it good, and that is writing and maintenance, not engineering.
+
+**Ships:** the feature a paid tier would actually be built around.
 
 ---
 
@@ -229,6 +335,31 @@ not after Phase 9, or that requirement adds two idle weeks.
 
 **Ships:** Android app on the Play Store.
 
+iOS is deferred. Publishing needs the Apple Developer Program at $99 a year,
+charged whether or not the app earns anything, and the app is removed from the
+store when a renewal lapses. That is a cost to take on once there is revenue to
+set against it, not before.
+
+---
+
+## Phase 10 — Charging for it (only once there are users)
+
+Nothing here is built until people are using the free version. Billing built
+for users who do not exist is a feature nobody tests.
+
+- The paid tier is the live-deck subscription and a larger AI allowance. The
+  allowance is already a stored number per user, so raising it is an UPDATE.
+- The forgetting curve, "why this card?", the retention slider and the
+  optimizer stay free — see non-negotiable 11 in `CLAUDE.md`.
+- On Android, digital goods go through Google Play Billing. Its current terms
+  are to be checked when this phase starts, not assumed now.
+
+**Not ads.** Evaluated and rejected, with the numbers in `01-PRODUCT.md`: at
+Indian eCPM rates an app needs about a thousand daily users to earn roughly
+₹85 a day — and a thousand users generating once a day is exactly the AI free
+tier's daily ceiling. Interstitials in a review session would also break the
+one thing the product is for.
+
 ---
 
 ## Timeline
@@ -243,11 +374,13 @@ not after Phase 9, or that requirement adds two idle weeks.
 | 5 AI | 2 days | week 5 |
 | 6 Web | 6 days | week 6 |
 | 7 Live | 4 days | **week 7 — shippable** |
-| 8 Anki import + Memory Report | 1.5 weeks | week 9 |
-| 9 Mobile | 2.5 weeks | week 12 |
-| — Play Store review | ~1 week | week 13 |
+| 8 Anki import + Memory Report + exam-day | 1.5 weeks | week 9 |
+| 8b Live decks | 2 weeks | week 11 |
+| 9 Mobile | 2.5 weeks | week 14 |
+| — Play Store review | ~1 week | week 15 |
+| 10 Charging | only once there are users | — |
 
-~2.5-3 months part-time. **Week 7 is the milestone that matters.**
+~3.5 months part-time. **Week 7 is the milestone that matters.**
 
 ---
 

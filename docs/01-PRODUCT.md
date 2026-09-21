@@ -138,9 +138,36 @@ Knowt number is what that costs.
 | **AI generation above a free monthly allowance** | It is the one feature with a real marginal cost. Charging for it is honest; the free tier stays usable |
 | **The Memory Report (phase 8)** | Analysis nobody else sells, built on the optimizer. Free summary, paid full report |
 | **Convenience** — multi-device sync, `.apkg` export | Standard, and none of it is the product's point |
+| **Live decks (phase 8b)** | What AnkiHub sells. Here the architecture already separates card content from each user's memory state, so an author's correction never resets a subscriber's schedule |
+
+Exam-day prediction (phase 8) is presentation over the optimizer, so it is free
+in outline -- "you will recall about 847 of 1,200" -- and a candidate for the
+paid report in detail.
 
 Anything beyond that is a different company: a vertical, its own content, and
 full-time attention. Worth revisiting only if the free product finds users.
+
+### Why not ads
+
+Considered in September 2026 when the question was raised directly, and
+rejected on arithmetic:
+
+- AdMob eCPM in India is about $0.30-0.80, the payout threshold is $100, and
+  AdMob keeps 32%.
+- At $0.50 eCPM, a thousand daily users seeing two ads each is about $1 a day
+  -- roughly ₹85 -- and the first payout arrives after about a hundred days.
+- A thousand daily users generating cards once each is 1,000 requests: the
+  whole daily allowance of one model on the AI free tier. The point at which
+  ads start paying is the point at which generation stops working.
+- An interstitial in the middle of a review session breaks the thing the
+  product exists to do.
+
+### Why not iOS yet
+
+Publishing needs the Apple Developer Program: $99 a year, charged whether or
+not the app earns anything, and the app leaves the store when it lapses.
+Android costs a one-off $25 that has already been paid. iOS follows revenue,
+not the other way round.
 
 ### Expected outcome, stated plainly
 
