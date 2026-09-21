@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { generateRequest } from '../src/ai';
+import { MAX_NOTES_CHARS, aiReportRequest, aiUsage, generateRequest } from '../src/ai';
 import { loginRequest, password, registerRequest, updateSettingsRequest } from '../src/auth';
 import { bulkCreateRequest, createCardRequest, listCardsQuery } from '../src/card';
 import { isoDate, pageQuery, paginated, problemDetails, queryBoolean } from '../src/common';
@@ -175,6 +175,30 @@ describe('ai generation', () => {
 
   it('refuses a text blob too short to be worth generating from', () => {
     expect(generateRequest.safeParse({ ...base, text: 'too short' }).success).toBe(false);
+  });
+
+  it('caps notes at what the free tier can spend in one request', () => {
+    // 8,000 tokens per minute per model, shared by every user of the app.
+    expect(generateRequest.safeParse({ ...base, text: 'x'.repeat(MAX_NOTES_CHARS) }).success).toBe(true);
+    expect(
+      generateRequest.safeParse({ ...base, text: 'x'.repeat(MAX_NOTES_CHARS + 1) }).success,
+    ).toBe(false);
+  });
+
+  it('only accepts the report reasons the review queue knows about', () => {
+    const report = { front: 'Q', back: 'A' };
+    expect(aiReportRequest.safeParse({ ...report, reason: 'incorrect' }).success).toBe(true);
+    expect(aiReportRequest.safeParse({ ...report, reason: 'boring' }).success).toBe(false);
+  });
+
+  it('carries the reset time as a real date', () => {
+    const usage = aiUsage.parse({
+      usedToday: 5,
+      dailyLimit: 20,
+      remaining: 15,
+      resetsAt: '2026-09-22T00:00:00.000Z',
+    });
+    expect(usage.resetsAt).toBeInstanceOf(Date);
   });
 });
 

@@ -78,3 +78,10 @@ export const updateSettingsRequest = z
   })
   .partial();
 export type UpdateSettingsRequest = z.infer<typeof updateSettingsRequest>;
+
+/**
+ * Deleting an account asks for the password again. A session left open on a
+ * shared laptop should not be enough to erase years of review history.
+ */
+export const deleteAccountRequest = z.object({ password: z.string().min(1).max(72) });
+export type DeleteAccountRequest = z.infer<typeof deleteAccountRequest>;

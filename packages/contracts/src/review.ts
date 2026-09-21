@@ -120,22 +120,42 @@ export type ReviewHistoryItem = z.infer<typeof reviewHistoryItem>;
  * client has to work on a plane. Offline-first wins: these are the user's own
  * cards, and the only person a peek costs anything is them.
  */
-export const queueCard = z.object({
-  id: cuid,
-  deckId: cuid,
-  deckTitle: z.string(),
-  front: z.string(),
-  back: z.string(),
-  hint: z.string().nullable(),
-  state: cardState,
-  dueAt: isoDate,
-  /** Predicted recall right now. The reason this card is here. */
-  retrievability: z.number().min(0).max(1),
-});
+export const queueCard = z
+  .object({
+    id: cuid,
+    deckId: cuid,
+    deckTitle: z.string(),
+    front: z.string(),
+    back: z.string(),
+    hint: z.string().nullable(),
+    /** Predicted recall right now. The reason this card is here. */
+    retrievability: z.number().min(0).max(1),
+  })
+  // The full scheduling state, so the client can run the same pure scheduler
+  // the server does and show the next interval before the round trip finishes.
+  .merge(cardSchedule);
 export type QueueCard = z.infer<typeof queueCard>;
+
+/**
+ * What this user is being scheduled with.
+ *
+ * Sent with the queue so the client can schedule locally -- instantly on web,
+ * offline on the phone -- with the same parameters the server will use. The
+ * server still has the last word: its result replaces the local one when the
+ * review lands, and only the server applies interval fuzz.
+ */
+export const schedulingConfig = z.object({
+  params: z.array(z.number()),
+  desiredRetention: z.number().min(0).max(1),
+  maximumInterval: z.number().min(1),
+  learningSteps: z.array(z.number()),
+  relearningSteps: z.array(z.number()),
+});
+export type SchedulingConfig = z.infer<typeof schedulingConfig>;
 
 export const queueResponse = z.object({
   cards: z.array(queueCard),
+  config: schedulingConfig,
   /** Everything due right now, before the daily caps were applied. */
   dueTotal: z.number().int().min(0),
   newRemainingToday: z.number().int().min(0),

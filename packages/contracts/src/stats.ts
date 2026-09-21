@@ -94,3 +94,22 @@ export const forecast = z.object({
   backlog: z.number().int().min(0),
 });
 export type Forecast = z.infer<typeof forecast>;
+
+/**
+ * What each retention target would cost, for the settings slider.
+ *
+ * The whole range comes back in one response so the slider is live without a
+ * request per pixel of drag. It is an estimate -- each review card comes back
+ * about once per interval, so cards / interval -- and it is labelled as one.
+ */
+export const workloadPoint = z.object({
+  retention: z.number().min(0).max(1),
+  reviewsPerDay: z.number().min(0),
+});
+export const workloadPreview = z.object({
+  /** Cards in REVIEW state that the estimate is built from. */
+  cardsCounted: z.number().int().min(0),
+  current: z.number().min(0).max(1),
+  points: z.array(workloadPoint),
+});
+export type WorkloadPreview = z.infer<typeof workloadPreview>;
