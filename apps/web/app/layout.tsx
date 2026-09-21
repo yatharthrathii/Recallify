@@ -1,43 +1,66 @@
-import type { Metadata } from 'next';
-import { Fraunces, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
+import { Providers } from '@/lib/providers';
+import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 // Self-hosted by next/font: no render-blocking request to Google, no layout
 // shift, and the CSS variables line up with the ones in globals.css.
-const fraunces = Fraunces({
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  variable: '--font-display',
+  variable: '--font-bricolage',
   display: 'swap',
-  axes: ['SOFT', 'WONK', 'opsz'],
+  axes: ['opsz'],
 });
 
 const plexSans = IBM_Plex_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
-  variable: '--font-ui',
+  variable: '--font-plex-sans',
   display: 'swap',
 });
 
 const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400', '500'],
-  variable: '--font-mono',
+  variable: '--font-plex-mono',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
-  title: 'Recallify',
+  title: { default: 'Recallify', template: '%s · Recallify' },
   description:
-    'A spaced-repetition scheduler built on FSRS, with the algorithm made visible.',
+    'A flashcard scheduler built on FSRS that shows its work: the forgetting curve of every card, and why each one is due.',
+  applicationName: 'Recallify',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    // Blush and slate, from @recallify/tokens. Kept as rgb() because the repo's
+    // lint rule reserves hex literals for the tokens package.
+    { media: '(prefers-color-scheme: light)', color: 'rgb(238 226 220)' },
+    { media: '(prefers-color-scheme: dark)', color: 'rgb(33 42 49)' },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${plexSans.variable} ${plexMono.variable}`}
+      className={`${bricolage.variable} ${plexSans.variable} ${plexMono.variable}`}
+      // The boot script sets data-theme before hydration, so the attribute on
+      // the server and the client legitimately differ.
+      suppressHydrationWarning
     >
-      <body>{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+      </head>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

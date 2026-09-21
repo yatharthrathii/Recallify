@@ -2,7 +2,13 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Workspace packages ship raw TypeScript; Next compiles them in-place.
+  // Next writes AGENTS.md and CLAUDE.md into the app by default. This repo has
+  // its own working agreement at the root, and generated files do not belong
+  // in version control beside it.
+  agentRules: false,
+  // The floating dev badge sits on top of the account menu in the sidebar.
+  devIndicators: false,
+  // Workspace packages, compiled in place by Next.
   transpilePackages: [
     '@recallify/tokens',
     '@recallify/core',
@@ -13,17 +19,8 @@ const nextConfig: NextConfig = {
   // Auto-memoises components, which keeps useMemo noise out of the review hot
   // path -- see the <50ms budget in docs/05-ENGINEERING.md.
   reactCompiler: true,
-  async rewrites() {
-    // BFF proxy. The browser only ever talks to this origin; the Next route
-    // layer attaches the token from the httpOnly cookie and forwards to NestJS.
-    // See docs/02-ARCHITECTURE.md, "Request flow".
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination: `${process.env.API_URL ?? 'http://localhost:3001'}/api/v1/:path*`,
-      },
-    ];
-  },
+  // No rewrites. /api/v1 is a real route handler (app/api/v1/[...path]) because
+  // a rewrite cannot read the httpOnly cookie and attach the bearer header.
 };
 
 export default nextConfig;
