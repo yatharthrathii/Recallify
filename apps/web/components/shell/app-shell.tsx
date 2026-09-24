@@ -75,6 +75,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       <MenuItem onSelect={() => applyTheme('light')}>Light</MenuItem>
       <MenuItem onSelect={() => applyTheme('dark')}>Dark</MenuItem>
       <MenuItem onSelect={() => applyTheme('system')}>Match the system</MenuItem>
+      <MenuSeparator />
+      {/* The public site stays reachable while signed in. */}
+      <MenuItem asChild>
+        <Link href="/">Front page</Link>
+      </MenuItem>
 
       <MenuSeparator />
       <MenuItem onSelect={() => void signOut()}>
