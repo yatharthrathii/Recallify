@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 import { Providers } from '@/lib/providers';
+import { siteUrl } from '@/lib/site';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
@@ -28,10 +29,16 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: siteUrl(),
   title: { default: 'Recallify', template: '%s · Recallify' },
   description:
     'A flashcard scheduler built on FSRS that shows its work: the forgetting curve of every card, and why each one is due.',
   applicationName: 'Recallify',
+  // Title and description are left out here on purpose: Next then fills them
+  // from whichever page is being shared, so every page gets its own card.
+  openGraph: { siteName: 'Recallify', type: 'website', locale: 'en_IN' },
+  twitter: { card: 'summary_large_image' },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
