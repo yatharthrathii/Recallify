@@ -75,6 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       <MenuItem onSelect={() => applyTheme('light')}>Light</MenuItem>
       <MenuItem onSelect={() => applyTheme('dark')}>Dark</MenuItem>
       <MenuItem onSelect={() => applyTheme('system')}>Match the system</MenuItem>
+
       <MenuSeparator />
       <MenuItem onSelect={() => void signOut()}>
         <LogOut className="size-4 text-ink-muted" />

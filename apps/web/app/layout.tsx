@@ -38,12 +38,11 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    // Blush and slate, from @recallify/tokens. Kept as rgb() because the repo's
-    // lint rule reserves hex literals for the tokens package.
-    { media: '(prefers-color-scheme: light)', color: 'rgb(238 226 220)' },
-    { media: '(prefers-color-scheme: dark)', color: 'rgb(33 42 49)' },
-  ],
+  // Blush, from @recallify/tokens, and not conditioned on the system scheme:
+  // the site is light by default whatever the system says, so the browser's
+  // own chrome should match that rather than the operating system. Kept as
+  // rgb() because the repo's lint rule reserves hex literals for tokens.
+  themeColor: 'rgb(238 226 220)',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

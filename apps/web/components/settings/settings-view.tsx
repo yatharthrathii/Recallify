@@ -267,13 +267,15 @@ function Appearance() {
           applyTheme(choice);
         }}
         options={[
-          { value: 'system', label: 'System' },
           { value: 'light', label: 'Light' },
           { value: 'dark', label: 'Dark' },
+          { value: 'system', label: 'System' },
         ]}
         className="w-full sm:w-auto"
       />
-      <p className="mt-2 text-caption text-ink-muted">Remembered on this device only.</p>
+      <p className="mt-2 text-caption text-ink-muted">
+        Light unless you say otherwise. Remembered on this device only.
+      </p>
     </Section>
   );
 }
