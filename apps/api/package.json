@@ -13,7 +13,8 @@
     "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "db:deploy": "dotenv -e ../../.env -- prisma migrate deploy",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
-    "db:push": "dotenv -e ../../.env -- prisma db push"
+    "db:push": "dotenv -e ../../.env -- prisma db push",
+    "db:seed": "nest build && dotenv -e ../../.env -- node dist/demo/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

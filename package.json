@@ -17,18 +17,25 @@
     "db:generate": "pnpm --filter @recallify/api db:generate",
     "db:migrate": "pnpm --filter @recallify/api db:migrate",
     "db:studio": "pnpm --filter @recallify/api db:studio",
+    "db:seed": "pnpm --filter @recallify/api db:seed",
     "up": "docker compose -f infra/docker-compose.yml up -d",
     "down": "docker compose -f infra/docker-compose.yml down",
+    "size": "size-limit",
+    "test:e2e": "pnpm --filter @recallify/e2e test:e2e",
+    "lighthouse": "lhci autorun",
     "format": "prettier --write \"**/*.{ts,tsx,md,json,yml}\"",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@lhci/cli": "^0.15",
     "@recallify/config": "workspace:*",
+    "@size-limit/file": "^11",
+    "eslint": "^9.13.0",
     "prettier": "^3.3.3",
+    "size-limit": "^11",
     "turbo": "^2.1.3",
     "typescript": "^5.6.3",
-    "@eslint/js": "^9.13.0",
-    "eslint": "^9.13.0",
     "typescript-eslint": "^8.11.0"
   }
 }
