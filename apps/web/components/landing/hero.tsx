@@ -4,6 +4,7 @@ import { ArrowRight } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import Link from 'next/link';
 import { useRef } from 'react';
+import { DemoButton } from '@/components/auth/demo-button';
 import { EASE, SplitHeading } from '@/components/motion';
 import { LinkButton } from '@/components/ui/button';
 import { DemoCurve } from './demo-curve';
@@ -74,15 +75,21 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
                 {signedIn ? 'Open the app' : 'Create a free account'}
                 <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
               </LinkButton>
-              <Link
-                href="/how-it-works"
-                className="link-sweep whitespace-nowrap text-ui font-medium text-ink"
-              >
-                How it works
-              </Link>
+              {signedIn ? (
+                <Link
+                  href="/how-it-works"
+                  className="link-sweep whitespace-nowrap text-ui font-medium text-ink"
+                >
+                  How it works
+                </Link>
+              ) : (
+                <DemoButton className="whitespace-nowrap" />
+              )}
             </div>
             <p className="tabular mt-5 text-caption text-ink-faint">
-              Free. No ads. No card required.
+              {signedIn
+                ? 'Free. No ads. No card required.'
+                : 'The demo needs no signup and is deleted after a day.'}
             </p>
           </motion.div>
 

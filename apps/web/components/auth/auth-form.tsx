@@ -10,6 +10,7 @@ import { Stagger, StaggerItem } from '@/components/motion';
 import { Button } from '@/components/ui/button';
 import { PasswordField, TextField, fieldError } from '@/components/ui/field';
 import { messageOf } from '@/components/ui/misc';
+import { DemoButton } from './demo-button';
 import { login, register } from '@/lib/auth';
 
 /** Only ever send someone to a path on this site. */
@@ -144,6 +145,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         >
           {isRegister ? 'Sign in' : 'Create an account'}
         </Link>
+      </StaggerItem>
+
+      <StaggerItem as="p" className="mt-3 text-ui text-ink-muted">
+        Just looking? <DemoButton>Open the demo</DemoButton>
       </StaggerItem>
     </Stagger>
   );
