@@ -44,7 +44,7 @@ export function CommandPalette({ open, onOpenChange, onSignOut }: Props) {
       onOpenChange={onOpenChange}
       label="Command palette"
       overlayClassName="fixed inset-0 z-40 bg-ink/35 animate-fade-in"
-      contentClassName="fixed left-1/2 top-[12dvh] z-50 w-[calc(100vw-32px)] max-w-[560px] -translate-x-1/2 overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[var(--shadow-md)] animate-pop-in"
+      contentClassName="fixed left-1/2 top-[12dvh] z-50 w-[calc(100vw-32px)] max-w-140 -translate-x-1/2 overflow-hidden rounded-lg border border-line-strong bg-surface shadow-[var(--shadow-md)] animate-pop-in"
     >
       <Command.Input
         placeholder="Go to a page, open a deck, change the theme"

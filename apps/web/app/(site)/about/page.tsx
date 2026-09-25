@@ -66,7 +66,7 @@ export default function AboutPage() {
       />
 
       <section>
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SplitHeading
               as="h2"
@@ -101,7 +101,7 @@ export default function AboutPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-8 lg:py-24">
+        <div className="mx-auto max-w-310 px-4 py-16 sm:px-8 lg:py-24">
           <SplitHeading
             as="h2"
             text="What it is held to."
@@ -125,7 +125,7 @@ export default function AboutPage() {
       </section>
 
       <section className="border-t border-line-strong">
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div>
             <SplitHeading
               as="h2"
@@ -156,7 +156,7 @@ export default function AboutPage() {
       </section>
 
       <section className="border-t border-line-strong bg-highlight">
-        <div className="mx-auto grid max-w-[1240px] gap-8 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:py-20">
+        <div className="mx-auto grid max-w-310 gap-8 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:py-20">
           <div>
             <SplitHeading
               as="h2"

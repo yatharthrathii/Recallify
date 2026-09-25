@@ -103,7 +103,7 @@ export function DemoCurve() {
             onChange={(v) => setTarget(v / 100)}
           />
         </div>
-        <p className="text-ui text-ink-muted sm:max-w-[240px] sm:text-right">
+        <p className="text-ui text-ink-muted sm:max-w-60 sm:text-right">
           Reviews land{' '}
           <span className="tabular text-ink">
             {sim.intervals.map(formatInterval).join(', ')}

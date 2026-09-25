@@ -104,7 +104,7 @@ export function StatsView() {
 
       <Section title="The last year" className="mb-10">
         {heatmap.isLoading ? (
-          <Skeleton className="h-[130px] w-full" />
+          <Skeleton className="h-32.5 w-full" />
         ) : heatmap.isError ? (
           <ErrorState error={heatmap.error} onRetry={() => void heatmap.refetch()} />
         ) : (
@@ -125,7 +125,7 @@ export function StatsView() {
         }
       >
         {forecast.isLoading ? (
-          <Skeleton className="h-[140px] w-full" />
+          <Skeleton className="h-35 w-full" />
         ) : forecast.isError ? (
           <ErrorState error={forecast.error} onRetry={() => void forecast.refetch()} />
         ) : (

@@ -55,7 +55,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
         scrolled || open ? 'border-line bg-paper' : 'border-transparent bg-transparent',
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1240px] items-center justify-between gap-6 px-4 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-310 items-center justify-between gap-6 px-4 sm:px-8">
         <Logo />
 
         <nav aria-label="Site" className="hidden items-center gap-1 md:flex">
@@ -115,7 +115,7 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             transition={{ duration: 0.35, ease: EASE }}
             className="overflow-hidden border-t border-line bg-paper md:hidden"
           >
-            <ul className="mx-auto flex max-w-[1240px] flex-col px-4 py-2 sm:px-8">
+            <ul className="mx-auto flex max-w-310 flex-col px-4 py-2 sm:px-8">
               {SITE_NAV.map((item) => (
                 <li key={item.href}>
                   <Link

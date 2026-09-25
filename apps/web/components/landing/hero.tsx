@@ -30,10 +30,10 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         initial={{ opacity: 0, scale: 0.6 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, ease: EASE }}
-        className="pointer-events-none absolute -right-[18vw] -top-[10vw] size-[62vw] max-h-[760px] max-w-[760px] rounded-full bg-highlight sm:-right-[6vw] sm:-top-[8vw] sm:size-[46vw]"
+        className="pointer-events-none absolute -right-[18vw] -top-[10vw] size-[62vw] max-h-190 max-w-190 rounded-full bg-highlight sm:-right-[6vw] sm:-top-[8vw] sm:size-[46vw]"
       />
 
-      <div className="relative mx-auto max-w-[1240px] px-4 pb-16 pt-10 sm:px-8 sm:pt-16 lg:pb-24">
+      <div className="relative mx-auto max-w-310 px-4 pb-16 pt-10 sm:px-8 sm:pt-16 lg:pb-24">
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

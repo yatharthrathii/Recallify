@@ -104,7 +104,7 @@ export function IconButton({
       title={label}
       className={cn(
         'inline-flex size-9 shrink-0 items-center justify-center rounded-md text-ink-muted',
-        'transition-colors duration-[90ms] hover:bg-surface-alt hover:text-ink active:scale-[0.97]',
+        'transition-colors duration-90 hover:bg-surface-alt hover:text-ink active:scale-[0.97]',
         'disabled:pointer-events-none disabled:opacity-45',
         className,
       )}

@@ -56,7 +56,7 @@ export default function AndroidPage() {
       </SiteHero>
 
       <section>
-        <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-8 lg:py-24">
+        <div className="mx-auto max-w-310 px-4 py-16 sm:px-8 lg:py-24">
           <SplitHeading
             as="h2"
             text="What is already done."
@@ -80,7 +80,7 @@ export default function AndroidPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div>
             <SplitHeading
               as="h2"
@@ -109,7 +109,7 @@ export default function AndroidPage() {
       </section>
 
       <section className="border-t border-line-strong">
-        <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-8 lg:py-20">
+        <div className="mx-auto max-w-310 px-4 py-16 sm:px-8 lg:py-20">
           <SplitHeading
             as="h2"
             text="On a phone today."

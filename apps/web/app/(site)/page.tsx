@@ -78,7 +78,7 @@ export default async function LandingPage() {
       <ProductShowcase />
 
       <section>
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-32">
+        <div className="mx-auto grid max-w-310 gap-10 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-32">
           <div className="lg:sticky lg:top-28 lg:self-start">
             <Reveal>
               <p className="eyebrow">What you get to see</p>
@@ -123,7 +123,7 @@ export default async function LandingPage() {
 
       {/* The one full-bleed block of brand colour on the page. */}
       <section className="bg-brand text-on-brand">
-        <div className="mx-auto max-w-[1240px] px-4 py-20 sm:px-8 lg:py-28">
+        <div className="mx-auto max-w-310 px-4 py-20 sm:px-8 lg:py-28">
           <div className="mb-12 grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
             <SplitHeading
               as="h2"
@@ -144,7 +144,7 @@ export default async function LandingPage() {
       </section>
 
       <section>
-        <div className="mx-auto max-w-[1240px] px-4 py-20 sm:px-8 lg:py-28">
+        <div className="mx-auto max-w-310 px-4 py-20 sm:px-8 lg:py-28">
           <SplitHeading
             as="h2"
             text="Who it is for."
@@ -177,7 +177,7 @@ export default async function LandingPage() {
       </section>
 
       <section className="border-t border-line-strong">
-        <div className="mx-auto max-w-[1240px] px-4 py-20 sm:px-8 lg:py-28">
+        <div className="mx-auto max-w-310 px-4 py-20 sm:px-8 lg:py-28">
           <SplitHeading
             as="h2"
             text="Colour means one thing here."
@@ -196,7 +196,7 @@ export default async function LandingPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto grid max-w-[1240px] gap-12 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
+        <div className="mx-auto grid max-w-310 gap-12 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
           <div>
             <Reveal>
               <p className="eyebrow">Straight answers</p>
@@ -228,7 +228,7 @@ export default async function LandingPage() {
       </section>
 
       <section className="border-t border-line-strong bg-highlight">
-        <div className="mx-auto flex max-w-[1240px] flex-col items-start gap-8 px-4 py-20 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-24">
+        <div className="mx-auto flex max-w-310 flex-col items-start gap-8 px-4 py-20 sm:px-8 lg:flex-row lg:items-end lg:justify-between lg:py-24">
           <div>
             <SplitHeading
               as="h2"

@@ -66,7 +66,7 @@ export default function HowItWorksPage() {
       />
 
       <section>
-        <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-8 lg:py-24">
+        <div className="mx-auto max-w-310 px-4 py-16 sm:px-8 lg:py-24">
           <Stagger as="ol" inView gap={0.12} className="border-t border-line-strong">
             {STEPS.map((step, i) => (
               <StaggerItem
@@ -92,7 +92,7 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto grid max-w-[1240px] gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SplitHeading
               as="h2"
@@ -114,7 +114,7 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="border-t border-line-strong">
-        <div className="mx-auto max-w-[1240px] px-4 py-16 sm:px-8 lg:py-24">
+        <div className="mx-auto max-w-310 px-4 py-16 sm:px-8 lg:py-24">
           <SplitHeading
             as="h2"
             text="Questions people actually ask."
@@ -135,7 +135,7 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="border-t border-line-strong bg-highlight">
-        <div className="mx-auto flex max-w-[1240px] flex-col items-start gap-6 px-4 py-16 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:py-20">
+        <div className="mx-auto flex max-w-310 flex-col items-start gap-6 px-4 py-16 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:py-20">
           <SplitHeading
             as="h2"
             text="The first curve appears after your first review."

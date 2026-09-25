@@ -118,7 +118,7 @@ function DeckForm({
               aria-label={c}
               onClick={() => setColor(c)}
               className={cn(
-                'size-9 rounded-md border-2 transition-transform duration-[90ms] active:scale-95',
+                'size-9 rounded-md border-2 transition-transform duration-90 active:scale-95',
                 color === c
                   ? 'border-ink'
                   : 'border-transparent hover:border-line-strong',

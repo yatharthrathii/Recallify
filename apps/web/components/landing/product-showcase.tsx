@@ -72,7 +72,7 @@ export function ProductShowcase() {
 
   return (
     <section className="border-t border-line-strong bg-surface">
-      <div className="mx-auto max-w-[1240px] px-4 py-20 sm:px-8 lg:py-28">
+      <div className="mx-auto max-w-310 px-4 py-20 sm:px-8 lg:py-28">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
           <div>
             <Reveal>
@@ -209,7 +209,7 @@ export function ProductShowcase() {
               whileInView={{ opacity: 1, y: 0, rotate: 3 }}
               viewport={{ once: true, margin: '0px 0px -10% 0px' }}
               transition={{ duration: 0.9, ease: EASE, delay: 0.35 }}
-              className="absolute -bottom-10 -right-4 hidden w-[150px] overflow-hidden rounded-[22px] border-[5px] border-ink bg-ink shadow-[var(--shadow-lift)] lg:block xl:-right-10 xl:w-[170px]"
+              className="absolute -bottom-10 -right-4 hidden w-37.5 overflow-hidden rounded-[22px] border-5 border-ink bg-ink shadow-[var(--shadow-lift)] lg:block xl:-right-10 xl:w-42.5"
             >
               <div className="relative aspect-[390/844] overflow-hidden rounded-[17px]">
                 <Image

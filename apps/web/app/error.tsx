@@ -11,7 +11,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[680px] flex-col justify-center px-4 sm:px-8">
+    <div className="mx-auto flex min-h-dvh max-w-170 flex-col justify-center px-4 sm:px-8">
       <h1 className="font-display text-h1 font-semibold text-ink">
         This screen stopped working.
       </h1>

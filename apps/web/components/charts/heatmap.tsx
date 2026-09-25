@@ -152,7 +152,7 @@ export function Heatmap({ days, weeks = 53 }: { days: readonly Day[]; weeks?: nu
                         ease: [0.16, 1, 0.3, 1],
                       }}
                       style={{ width: cell, height: cell }}
-                      className="rounded-[2px] bg-surface-alt"
+                      className="rounded-xs bg-surface-alt"
                       onPointerEnter={() =>
                         setActive(day ?? { date: key, reviews: 0, retention: null })
                       }
@@ -160,7 +160,7 @@ export function Heatmap({ days, weeks = 53 }: { days: readonly Day[]; weeks?: nu
                       {reviews > 0 ? (
                         <div
                           className={cn(
-                            'size-full rounded-[2px]',
+                            'size-full rounded-xs',
                             retention === null
                               ? 'bg-ink-faint'
                               : LEVEL_BG[memoryLevel(retention)],

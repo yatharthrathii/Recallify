@@ -251,7 +251,7 @@ export function TodayView() {
 
         <Section title="Next 14 days">
           {forecast.isLoading ? (
-            <Skeleton className="h-[120px] w-full" />
+            <Skeleton className="h-30 w-full" />
           ) : forecast.isError ? (
             <ErrorState error={forecast.error} onRetry={() => void forecast.refetch()} />
           ) : (

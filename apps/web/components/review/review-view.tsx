@@ -147,7 +147,7 @@ export function ReviewView() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-20 border-b border-line bg-paper">
-        <div className="mx-auto flex h-14 max-w-[880px] items-center gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-220 items-center gap-4 px-4 sm:px-6">
           <Link
             href={exitHref}
             aria-label="Leave the session"
@@ -176,7 +176,7 @@ export function ReviewView() {
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[880px] flex-1 flex-col px-4 sm:px-6">
+      <div className="mx-auto flex w-full max-w-220 flex-1 flex-col px-4 sm:px-6">
         {queue.isLoading || (queue.data && !session) ? (
           <div className="flex flex-1 flex-col justify-center gap-4 py-10">
             <Skeleton className="h-64 w-full rounded-lg" />
@@ -280,7 +280,7 @@ function FlipCard({
   const isNew = card.state === 'NEW';
   const edge = isNew ? 'border-l-line-strong' : BORDER[memoryLevel(card.retrievability)];
   const face = cn(
-    'flip-face col-start-1 row-start-1 flex min-h-[260px] flex-col rounded-lg border border-line border-l-4 bg-surface px-5 py-6 sm:min-h-[320px] sm:px-10 sm:py-9',
+    'flip-face col-start-1 row-start-1 flex min-h-65 flex-col rounded-lg border border-line border-l-4 bg-surface px-5 py-6 sm:min-h-80 sm:px-10 sm:py-9',
     edge,
   );
 
@@ -544,7 +544,7 @@ function Finished({
 
       <motion.dl
         variants={RISE}
-        className="mt-8 grid max-w-[480px] grid-cols-4 gap-px overflow-hidden rounded-lg border border-line bg-line"
+        className="mt-8 grid max-w-120 grid-cols-4 gap-px overflow-hidden rounded-lg border border-line bg-line"
       >
         {RATINGS.map(({ key, label }) => (
           <div key={key} className="bg-surface px-3 py-3 text-center">

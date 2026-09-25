@@ -37,7 +37,7 @@ export function ForecastBars({
       <div
         role="img"
         aria-label={`Forecast. ${total} cards fall due over the next ${days.length} days, at most ${peak} in one day.`}
-        className="flex items-end gap-[3px]"
+        className="flex items-end gap-0.75"
         style={{ height }}
         onPointerLeave={() => setActive(null)}
       >
