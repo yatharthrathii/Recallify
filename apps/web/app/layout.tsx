@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from 'next/font/google';
 import { Providers } from '@/lib/providers';
+import { siteUrl } from '@/lib/site';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
@@ -28,22 +29,27 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: siteUrl(),
   title: { default: 'Recallify', template: '%s · Recallify' },
   description:
     'A flashcard scheduler built on FSRS that shows its work: the forgetting curve of every card, and why each one is due.',
   applicationName: 'Recallify',
+  // Title and description are left out here on purpose: Next then fills them
+  // from whichever page is being shared, so every page gets its own card.
+  openGraph: { siteName: 'Recallify', type: 'website', locale: 'en_IN' },
+  twitter: { card: 'summary_large_image' },
+  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: [
-    // Blush and slate, from @recallify/tokens. Kept as rgb() because the repo's
-    // lint rule reserves hex literals for the tokens package.
-    { media: '(prefers-color-scheme: light)', color: 'rgb(238 226 220)' },
-    { media: '(prefers-color-scheme: dark)', color: 'rgb(33 42 49)' },
-  ],
+  // Blush, from @recallify/tokens, and not conditioned on the system scheme:
+  // the site is light by default whatever the system says, so the browser's
+  // own chrome should match that rather than the operating system. Kept as
+  // rgb() because the repo's lint rule reserves hex literals for tokens.
+  themeColor: 'rgb(238 226 220)',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -22,6 +22,14 @@ export const envSchema = z.object({
   ACCESS_TOKEN_TTL: z.string().default('15m'),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
+  // Transactional email, for password reset links. Brevo's free tier sends
+  // 300 a day from any address you verify with them. Optional for the same
+  // reason as the AI key: without it, development logs the link instead of
+  // sending it and production answers 503 on /auth/forgot-password only.
+  BREVO_API_KEY: z.string().optional(),
+  MAIL_FROM: z.string().email().optional(),
+  MAIL_FROM_NAME: z.string().default('Recallify'),
+
   // Optional so the app, CI and the tests all boot without one. Without a key
   // /ai/generate answers 503 and everything else works.
   GROQ_API_KEY: z.string().optional(),

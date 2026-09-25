@@ -18,7 +18,7 @@ import { PageShell, Section } from '@/components/shell/app-shell';
 import { Button } from '@/components/ui/button';
 import { Segmented, Slider } from '@/components/ui/controls';
 import { ConfirmDialog } from '@/components/ui/dialog';
-import { TextField } from '@/components/ui/field';
+import { PasswordField, TextField } from '@/components/ui/field';
 import { ErrorState, Skeleton, messageOf } from '@/components/ui/misc';
 import { logout } from '@/lib/auth';
 import { applyTheme, readTheme, type ThemeChoice } from '@/lib/theme';
@@ -267,13 +267,15 @@ function Appearance() {
           applyTheme(choice);
         }}
         options={[
-          { value: 'system', label: 'System' },
           { value: 'light', label: 'Light' },
           { value: 'dark', label: 'Dark' },
+          { value: 'system', label: 'System' },
         ]}
         className="w-full sm:w-auto"
       />
-      <p className="mt-2 text-caption text-ink-muted">Remembered on this device only.</p>
+      <p className="mt-2 text-caption text-ink-muted">
+        Light unless you say otherwise. Remembered on this device only.
+      </p>
     </Section>
   );
 }
@@ -371,9 +373,8 @@ function Account({ user }: { user: CurrentUser }) {
         loading={busy}
         onConfirm={() => void remove()}
       >
-        <TextField
+        <PasswordField
           label="Your password, to confirm"
-          type="password"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

@@ -1,5 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { MailService } from '../src/mail/mail.service';
 import { API, registerUser, startHarness, uniqueEmail, type Harness, type TestUser } from './harness';
+
+/** The reset link out of the last email the app tried to send. */
+function lastResetLink(h: Harness): URL {
+  const mail = h.app.get(MailService);
+  const last = mail.outbox[mail.outbox.length - 1];
+  if (!last) throw new Error('no email was sent');
+  const match = /https?:\/\/\S+\/reset-password\?token=[A-Za-z0-9_-]+/.exec(last.text);
+  if (!match) throw new Error('no reset link in the email');
+  return new URL(match[0]);
+}
 
 describe('auth', () => {
   let h: Harness;
@@ -113,6 +124,81 @@ describe('auth', () => {
       where: { userId: user.id, revokedAt: null },
     });
     expect(live).toBe(0);
+  });
+
+  it('resets a password from an emailed link and signs every session out', async () => {
+    const user = await registerUser(h, 'reset');
+    created.push(user);
+
+    await h.http().post(`${API}/auth/forgot-password`).send({ email: user.email }).expect(202);
+
+    const link = lastResetLink(h);
+    const token = link.searchParams.get('token') ?? '';
+    expect(token.length).toBeGreaterThan(20);
+
+    // Only a hash of the token is stored.
+    const rows = await h.prisma.passwordReset.findMany({ where: { userId: user.id } });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.tokenHash).not.toBe(token);
+    expect(rows[0]?.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+
+    await h
+      .http()
+      .post(`${API}/auth/reset-password`)
+      .send({ token, password: 'a-brand-new-password' })
+      .expect(204);
+
+    // Old password gone, new one works.
+    await h
+      .http()
+      .post(`${API}/auth/login`)
+      .send({ email: user.email, password: 'correct-horse-battery' })
+      .expect(401);
+    await h
+      .http()
+      .post(`${API}/auth/login`)
+      .send({ email: user.email, password: 'a-brand-new-password' })
+      .expect(200);
+
+    // The session from before the reset is dead.
+    await h
+      .http()
+      .post(`${API}/auth/refresh`)
+      .send({ refreshToken: user.refreshToken })
+      .expect(401);
+
+    // And the link is spent.
+    await h
+      .http()
+      .post(`${API}/auth/reset-password`)
+      .send({ token, password: 'yet-another-password' })
+      .expect(400);
+  });
+
+  it('answers a reset request for an unknown address exactly like a known one', async () => {
+    const user = await registerUser(h, 'reset-ghost');
+    created.push(user);
+
+    const known = await h
+      .http()
+      .post(`${API}/auth/forgot-password`)
+      .send({ email: user.email })
+      .expect(202);
+    const unknown = await h
+      .http()
+      .post(`${API}/auth/forgot-password`)
+      .send({ email: uniqueEmail('nobody') })
+      .expect(202);
+
+    expect(known.text).toBe(unknown.text);
+  });
+
+  it('rejects a made-up reset token', async () => {
+    await h
+      .http()
+      .post(`${API}/auth/reset-password`)
+      .send({ token: 'x'.repeat(43), password: 'a-brand-new-password' })
+      .expect(400);
   });
 
   it('stores refresh tokens hashed, never raw', async () => {

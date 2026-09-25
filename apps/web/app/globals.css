@@ -7,6 +7,11 @@
    Structure matters here: the full light palette is defined on bare :root, and
    dark only *redefines* what changes. A colour whose only definition lives
    inside a media query breaks the moment someone toggles the theme manually.
+
+   Light is the default for everyone, whatever their system is set to: this is
+   a paper-coloured product and that is how it should be met. The system is
+   followed only by someone who asks for it in settings, which is the one case
+   where the media query below applies.
    --------------------------------------------------------------------------- */
 
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
@@ -113,7 +118,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
+  :root[data-theme='system'] {
     --bg: #212a31;
     --surface: #28333c;
     --surface-alt: #2e3944;
@@ -178,16 +183,18 @@
 }
 
 html {
-  color-scheme: light dark;
+  /* Matches the default theme, so form controls and scrollbars agree with it
+     before any stylesheet of ours is applied. */
+  color-scheme: light;
   /* Stops iOS inflating text in landscape. */
   -webkit-text-size-adjust: 100%;
 }
 
-:root[data-theme='light'] {
-  color-scheme: light;
-}
 :root[data-theme='dark'] {
   color-scheme: dark;
+}
+:root[data-theme='system'] {
+  color-scheme: light dark;
 }
 
 body {

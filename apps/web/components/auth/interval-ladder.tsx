@@ -20,7 +20,7 @@ export function IntervalLadder({ intervals }: { intervals: readonly number[] }) 
         hidden: {},
         shown: { transition: { staggerChildren: 0.14, delayChildren: 0.5 } },
       }}
-      className="mt-10 flex max-w-[460px] flex-col gap-4"
+      className="mt-10 flex max-w-115 flex-col gap-4"
     >
       {intervals.map((days, i) => (
         <motion.li

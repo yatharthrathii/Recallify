@@ -80,7 +80,7 @@ export function TryCard() {
             whileHover={revealed ? {} : { y: -4 }}
             transition={{ type: 'spring', stiffness: 260, damping: 26 }}
           >
-            <span className="flip-face col-start-1 row-start-1 flex min-h-[240px] flex-col justify-between rounded-lg bg-surface p-6 text-ink sm:min-h-[280px] sm:p-9">
+            <span className="flip-face col-start-1 row-start-1 flex min-h-60 flex-col justify-between rounded-lg bg-surface p-6 text-ink sm:min-h-70 sm:p-9">
               <span className="eyebrow">
                 {card.reps === 0 ? 'Question' : `Question, review ${card.reps + 1}`}
               </span>
@@ -91,7 +91,7 @@ export function TryCard() {
                 Click the card to turn it over
               </span>
             </span>
-            <span className="flip-face col-start-1 row-start-1 flex min-h-[240px] flex-col justify-between rounded-lg bg-surface p-6 text-ink [transform:rotateY(180deg)] sm:min-h-[280px] sm:p-9">
+            <span className="flip-face col-start-1 row-start-1 flex min-h-60 flex-col justify-between rounded-lg bg-surface p-6 text-ink [transform:rotateY(180deg)] sm:min-h-70 sm:p-9">
               <span className="eyebrow">Answer</span>
               <span className="font-display text-[clamp(22px,3.4vw,34px)] font-medium leading-[1.15]">
                 The number of days it takes for your chance of recalling it to fall from

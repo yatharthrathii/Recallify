@@ -11,6 +11,7 @@ import { RequestIdMiddleware } from './common/request-id.middleware';
 import { validateEnv } from './config/env';
 import { DecksModule } from './decks/decks.module';
 import { HealthModule } from './health/health.module';
+import { MailModule } from './mail/mail.module';
 import { OptimizerModule } from './optimizer/optimizer.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -34,6 +35,7 @@ import { StatsModule } from './stats/stats.module';
       validate: validateEnv,
     }),
     PrismaModule,
+    MailModule,
     SchedulingModule,
     AuthModule,
     DecksModule,

@@ -50,7 +50,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <aside className="relative hidden overflow-hidden bg-brand text-on-brand lg:flex lg:flex-col lg:justify-center lg:px-16">
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-40 -top-40 size-[520px] rounded-full bg-on-brand/[0.07]"
+          className="pointer-events-none absolute -right-40 -top-40 size-130 rounded-full bg-on-brand/[0.07]"
         />
         <p className="eyebrow text-on-brand/60!">How it schedules</p>
         <SplitHeading

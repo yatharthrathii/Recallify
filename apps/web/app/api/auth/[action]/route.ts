@@ -55,6 +55,15 @@ export async function POST(
       return response;
     }
 
+    // Neither of these starts a session. The API's answer is passed back as
+    // it is, status and all.
+    if (action === 'forgot-password' || action === 'reset-password') {
+      const body: unknown = await request.json().catch(() => ({}));
+      const upstream = await callApi(action, body);
+      if (!upstream.ok) return passThroughError(upstream);
+      return new NextResponse(null, { status: 204 });
+    }
+
     if (action === 'refresh') {
       const refreshToken = jar.get(REFRESH_COOKIE)?.value;
       if (!refreshToken) {

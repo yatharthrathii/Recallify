@@ -43,7 +43,7 @@ export function DecksView() {
       {decks.isLoading ? (
         <div className="flex flex-col gap-2">
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-[68px] w-full rounded-lg" />
+            <Skeleton key={i} className="h-17 w-full rounded-lg" />
           ))}
         </div>
       ) : decks.isError ? (
@@ -87,12 +87,12 @@ export function DecksView() {
                     {deck.archivedAt ? <Badge>Archived</Badge> : null}
                   </div>
                   {deck.description ? (
-                    <p className="mt-0.5 truncate pl-[22px] text-ui text-ink-muted">
+                    <p className="mt-0.5 truncate pl-5.5 text-ui text-ink-muted">
                       {deck.description}
                     </p>
                   ) : null}
                   {/* The numbers, inline, when there is no room for columns. */}
-                  <p className="tabular mt-1 pl-[22px] text-caption text-ink-muted md:hidden">
+                  <p className="tabular mt-1 pl-5.5 text-caption text-ink-muted md:hidden">
                     {formatCount(deck.cardCount)} cards,{' '}
                     <span className={cn(deck.dueCount > 0 && 'text-accent')}>
                       {deck.dueCount} due

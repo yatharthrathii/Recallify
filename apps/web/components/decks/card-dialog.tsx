@@ -276,7 +276,7 @@ function EditCard({ card, onDone }: { card: Card; onDone: () => void }) {
             </dl>
 
             {curve.isLoading ? (
-              <Skeleton className="h-[200px] w-full" />
+              <Skeleton className="h-50 w-full" />
             ) : curve.data ? (
               <ForgettingCurve
                 points={curve.data.points}

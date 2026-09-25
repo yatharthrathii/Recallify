@@ -68,7 +68,7 @@ export function DemoCurve() {
 
   return (
     <div className="rounded-lg border border-line bg-surface p-4 sm:p-6">
-      <div className="mb-1 flex items-baseline justify-between gap-4">
+      <div className="mb-1 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
         <span className="eyebrow">One card, five reviews</span>
         <span className="tabular text-caption text-ink-muted">
           live, computed in your browser
@@ -103,7 +103,7 @@ export function DemoCurve() {
             onChange={(v) => setTarget(v / 100)}
           />
         </div>
-        <p className="text-ui text-ink-muted sm:max-w-[240px] sm:text-right">
+        <p className="text-ui text-ink-muted sm:max-w-60 sm:text-right">
           Reviews land{' '}
           <span className="tabular text-ink">
             {sim.intervals.map(formatInterval).join(', ')}

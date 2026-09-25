@@ -122,7 +122,7 @@ export function Slider({
         aria-label={label}
         className={cn(
           'block size-5 rounded-full border-2 border-accent bg-surface shadow-[var(--shadow-sm)]',
-          'transition-transform duration-[90ms] hover:scale-110 active:scale-95',
+          'transition-transform duration-90 hover:scale-110 active:scale-95',
           'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
         )}
       />
@@ -176,7 +176,7 @@ export function Segmented<T extends string>({
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(option.value)}
             className={cn(
-              'h-8 flex-1 rounded-[6px] px-3 text-ui font-medium transition-colors duration-[90ms]',
+              'h-8 flex-1 rounded-md px-3 text-ui font-medium transition-colors duration-90',
               active
                 ? 'bg-surface text-ink shadow-[var(--shadow-sm)]'
                 : 'text-ink-muted hover:text-ink',

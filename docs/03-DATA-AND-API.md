@@ -216,6 +216,8 @@ POST   /auth/register
 POST   /auth/login
 POST   /auth/refresh          rotation + reuse detection
 POST   /auth/logout           revokes the whole family
+POST   /auth/forgot-password  emails a one-shot link; 202 whether or not the address exists
+POST   /auth/reset-password   spends the link, sets the password, signs out every device
 GET    /auth/me
 PATCH  /auth/me               name, retention target, daily limits
 DELETE /auth/me               needs the password again. Cascades to everything

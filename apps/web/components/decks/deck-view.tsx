@@ -254,7 +254,7 @@ export function DeckView({ deckId }: { deckId: string }) {
           aside="If you stopped reviewing today"
         >
           {curve.isLoading ? (
-            <Skeleton className="h-[240px] w-full" />
+            <Skeleton className="h-60 w-full" />
           ) : curve.isError ? (
             <ErrorState error={curve.error} onRetry={() => void curve.refetch()} />
           ) : (
@@ -278,7 +278,7 @@ export function DeckView({ deckId }: { deckId: string }) {
 
         <Section title="Due over 30 days">
           {stats.isLoading ? (
-            <Skeleton className="h-[120px] w-full" />
+            <Skeleton className="h-30 w-full" />
           ) : (
             <ForecastBars days={s?.forecast ?? []} />
           )}

@@ -148,6 +148,18 @@ export class TokenService {
     });
   }
 
+  /**
+   * Sign out of every session the user has, on every device. Used after a
+   * password reset: whoever prompted the reset may not be the only one with
+   * a session, and the new password is the moment to be sure.
+   */
+  async revokeAllForUser(userId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   /** Sign out of every session descended from one login. */
   async revokeFamily(familyId: string): Promise<void> {
     await this.prisma.refreshToken.updateMany({

@@ -46,9 +46,9 @@ export function Dialog({
         <DialogPrimitive.Content
           className={cn(
             panel,
-            size === 'sm' && 'sm:max-w-[420px]',
-            size === 'md' && 'sm:max-w-[560px]',
-            size === 'lg' && 'sm:max-w-[760px]',
+            size === 'sm' && 'sm:max-w-105',
+            size === 'md' && 'sm:max-w-140',
+            size === 'lg' && 'sm:max-w-190',
           )}
           {...(description ? {} : { 'aria-describedby': undefined })}
         >
@@ -111,7 +111,7 @@ export function ConfirmDialog({
     <AlertPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <AlertPrimitive.Portal>
         <AlertPrimitive.Overlay className={overlay} />
-        <AlertPrimitive.Content className={cn(panel, 'sm:max-w-[440px]')}>
+        <AlertPrimitive.Content className={cn(panel, 'sm:max-w-110')}>
           <div className="px-5 pt-5">
             <AlertPrimitive.Title className="text-h3 font-semibold text-ink">
               {title}

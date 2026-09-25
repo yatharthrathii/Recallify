@@ -3,7 +3,7 @@ import { LinkButton } from '@/components/ui/button';
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-dvh max-w-[680px] flex-col px-4 sm:px-8">
+    <div className="mx-auto flex min-h-dvh max-w-170 flex-col px-4 sm:px-8">
       <header className="flex h-16 items-center">
         <Logo />
       </header>

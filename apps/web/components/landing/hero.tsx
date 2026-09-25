@@ -2,6 +2,7 @@
 
 import { ArrowRight } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'motion/react';
+import Link from 'next/link';
 import { useRef } from 'react';
 import { EASE, SplitHeading } from '@/components/motion';
 import { LinkButton } from '@/components/ui/button';
@@ -29,10 +30,10 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
         initial={{ opacity: 0, scale: 0.6 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.4, ease: EASE }}
-        className="pointer-events-none absolute -right-[18vw] -top-[10vw] size-[62vw] max-h-[760px] max-w-[760px] rounded-full bg-highlight sm:-right-[6vw] sm:-top-[8vw] sm:size-[46vw]"
+        className="pointer-events-none absolute -right-[18vw] -top-[10vw] size-[62vw] max-h-190 max-w-190 rounded-full bg-highlight sm:-right-[6vw] sm:-top-[8vw] sm:size-[46vw]"
       />
 
-      <div className="relative mx-auto max-w-[1240px] px-4 pb-16 pt-10 sm:px-8 sm:pt-16 lg:pb-24">
+      <div className="relative mx-auto max-w-310 px-4 pb-16 pt-10 sm:px-8 sm:pt-16 lg:pb-24">
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -56,11 +57,14 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             transition={{ duration: 0.8, ease: EASE, delay: 0.75 }}
           >
             <p className="max-w-[46ch] text-body text-ink-muted">
-              Recallify runs FSRS, the algorithm Anki uses, and shows you what is normally
-              hidden: the forgetting curve of every card, why a card is due today, and
-              what your own history says about the defaults.
+              Recallify schedules every card with FSRS, the open source spaced repetition
+              model, and shows you what is normally hidden: the forgetting curve of every
+              card, why a card is due today, and what your own history says about the
+              defaults.
             </p>
-            <div className="mt-8 flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
+            {/* One button. Signing in lives in the header, where someone who
+                already has an account will look for it. */}
+            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <LinkButton
                 href={signedIn ? '/today' : '/register'}
                 variant="primary"
@@ -70,11 +74,12 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
                 {signedIn ? 'Open the app' : 'Create a free account'}
                 <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
               </LinkButton>
-              {!signedIn ? (
-                <LinkButton href="/login" size="lg">
-                  Sign in
-                </LinkButton>
-              ) : null}
+              <Link
+                href="/how-it-works"
+                className="link-sweep whitespace-nowrap text-ui font-medium text-ink"
+              >
+                How it works
+              </Link>
             </div>
             <p className="tabular mt-5 text-caption text-ink-faint">
               Free. No ads. No card required.

@@ -132,7 +132,7 @@ function Generate({ deckId, onDone }: { deckId: string; onDone: () => void }) {
                 exit={{ opacity: 0, height: 0, marginTop: -8 }}
                 transition={{ duration: 0.16, delay: Math.min(0.2, i * 0.02) }}
                 className={cn(
-                  'flex gap-3 overflow-hidden rounded-md border px-3 py-3 transition-colors duration-[90ms]',
+                  'flex gap-3 overflow-hidden rounded-md border px-3 py-3 transition-colors duration-90',
                   draft.keep
                     ? 'border-line-strong bg-surface'
                     : 'border-line bg-surface-alt/50',

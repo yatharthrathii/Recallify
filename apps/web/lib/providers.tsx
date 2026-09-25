@@ -55,7 +55,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             unstyled: true,
             classNames: {
               toast:
-                'flex w-full items-center gap-3 rounded-lg bg-ink px-4 py-3.5 text-ui text-paper shadow-[var(--shadow-md)] sm:w-[380px]',
+                'flex w-full items-center gap-3 rounded-lg bg-ink px-4 py-3.5 text-ui text-paper shadow-[var(--shadow-md)] sm:w-95',
               title: 'font-medium',
               description: 'text-paper/70',
               actionButton:

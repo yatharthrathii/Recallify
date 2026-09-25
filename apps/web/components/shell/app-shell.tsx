@@ -76,6 +76,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <MenuItem onSelect={() => applyTheme('dark')}>Dark</MenuItem>
       <MenuItem onSelect={() => applyTheme('system')}>Match the system</MenuItem>
       <MenuSeparator />
+      {/* The public site stays reachable while signed in. */}
+      <MenuItem asChild>
+        <Link href="/">Front page</Link>
+      </MenuItem>
+
+      <MenuSeparator />
       <MenuItem onSelect={() => void signOut()}>
         <LogOut className="size-4 text-ink-muted" />
         Sign out
@@ -102,7 +108,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="flex h-9 w-full items-center gap-2 rounded-md border border-line bg-surface px-2.5 text-ui text-ink-faint transition-colors duration-[90ms] hover:border-line-strong hover:text-ink-muted"
+            className="flex h-9 w-full items-center gap-2 rounded-md border border-line bg-surface px-2.5 text-ui text-ink-faint transition-colors duration-90 hover:border-line-strong hover:text-ink-muted"
           >
             <Search className="size-4" />
             <span className="flex-1 text-left">Search</span>
@@ -161,7 +167,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </LinkButton>
 
           <Menu>
-            <MenuTrigger className="flex h-11 w-full items-center gap-2.5 rounded-md px-2 text-left transition-colors duration-[90ms] hover:bg-surface-alt">
+            <MenuTrigger className="flex h-11 w-full items-center gap-2.5 rounded-md px-2 text-left transition-colors duration-90 hover:bg-surface-alt">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-line-strong bg-surface text-caption font-medium uppercase text-ink-muted">
                 {name.slice(0, 1) || '?'}
               </span>
@@ -223,7 +229,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        <div className="mx-auto grid h-16 max-w-[560px] grid-cols-5 items-center">
+        <div className="mx-auto grid h-16 max-w-140 grid-cols-5 items-center">
           {NAV.slice(0, 2).map((entry) => (
             <TabLink
               key={entry.href}
@@ -306,7 +312,7 @@ export function PageShell({
     <div
       className={cn(
         'mx-auto w-full px-4 pb-16 pt-6 sm:px-8 sm:pt-10',
-        width === 'app' ? 'max-w-[1120px]' : 'max-w-[760px]',
+        width === 'app' ? 'max-w-280' : 'max-w-190',
       )}
     >
       <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

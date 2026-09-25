@@ -80,6 +80,20 @@ export const updateSettingsRequest = z
 export type UpdateSettingsRequest = z.infer<typeof updateSettingsRequest>;
 
 /**
+ * Asking for a reset link. The answer is the same whether or not the address
+ * has an account, so the endpoint cannot be used to discover which do.
+ */
+export const forgotPasswordRequest = z.object({ email });
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordRequest>;
+
+/** The token from the emailed link, plus the new password. */
+export const resetPasswordRequest = z.object({
+  token: z.string().min(20).max(200),
+  password,
+});
+export type ResetPasswordRequest = z.infer<typeof resetPasswordRequest>;
+
+/**
  * Deleting an account asks for the password again. A session left open on a
  * shared laptop should not be enough to erase years of review history.
  */

@@ -10,7 +10,14 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiConflictResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiConflictResponse,
+  ApiOperation,
+  ApiServiceUnavailableResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ProblemDetailsDto } from '../common/problem.dto';
 import { ApiCreated, ApiNoContent, ApiOk } from '../common/api-responses';
 import type { Request, Response } from 'express';
@@ -20,8 +27,10 @@ import {
   AuthTokensDto,
   CurrentUserDto,
   DeleteAccountDto,
+  ForgotPasswordDto,
   LoginDto,
   RegisterDto,
+  ResetPasswordDto,
   UpdateSettingsDto,
 } from './dto';
 import { Public } from './public.decorator';
@@ -129,6 +138,41 @@ export class AuthController {
     const presented = req.cookies?.[REFRESH_COOKIE] ?? body?.refreshToken;
     if (presented) await this.tokens.revoke(presented);
     res.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+  }
+
+  @Public()
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({
+    summary: 'Email a password reset link',
+    description:
+      'Answers 202 whether or not the address has an account, so it cannot be ' +
+      'used to discover which addresses do. The link works for 30 minutes, once.',
+  })
+  @ApiNoContent('Accepted. If the address has an account, a link is on its way.')
+  @ApiServiceUnavailableResponse({
+    description: 'No email provider is configured.',
+    type: ProblemDetailsDto,
+  })
+  async forgotPassword(@Body() body: ForgotPasswordDto): Promise<void> {
+    await this.auth.forgotPassword(body.email);
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Set a new password from a reset link',
+    description:
+      'Spends the link and signs the account out of every session, on every device.',
+  })
+  @ApiNoContent('Password changed. Sign in again with the new one.')
+  @ApiBadRequestResponse({
+    description: 'The link is invalid, already used, or older than 30 minutes.',
+    type: ProblemDetailsDto,
+  })
+  async resetPassword(@Body() body: ResetPasswordDto): Promise<void> {
+    await this.auth.resetPassword(body.token, body.password);
   }
 
   @Get('me')

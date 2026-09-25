@@ -36,6 +36,9 @@ export const register = (body: {
   displayName?: string;
 }) => post('register', body);
 export const logout = () => post('logout');
+export const forgotPassword = (body: { email: string }) => post('forgot-password', body);
+export const resetPassword = (body: { token: string; password: string }) =>
+  post('reset-password', body);
 
 /**
  * Exchange the refresh cookie for a new session.
