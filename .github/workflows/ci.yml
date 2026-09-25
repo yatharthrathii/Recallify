@@ -2,9 +2,8 @@ name: CI
 
 on:
   push:
-    # v2 is the active development branch until it becomes default in phase 7.
-    # main still holds v1.
-    branches: [main, v2]
+    # v2 became main in phase 7; v1 lives on in the v1-legacy branch.
+    branches: [main]
   pull_request:
 
 concurrency:
@@ -34,6 +33,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
+      # Budgets on what ships: the engine the phone will also run, and the
+      # web app's client JavaScript as a whole. See .size-limit.json.
+      - run: pnpm size
 
   test:
     name: unit tests
@@ -117,3 +119,86 @@ jobs:
       - run: pnpm --filter @recallify/api db:generate
 
       - run: pnpm --filter @recallify/api test
+
+  e2e:
+    name: end to end
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: recallify
+          POSTGRES_PASSWORD: recallify
+          POSTGRES_DB: recallify_e2e
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://recallify:recallify@localhost:5432/recallify_e2e?schema=public
+      DIRECT_URL: postgresql://recallify:recallify@localhost:5432/recallify_e2e?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '9.12.0' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # NODE_ENV=test keeps email in memory: the forgot password flow runs
+      # end to end without a mail provider and without sending anything.
+      - name: Write .env for the API under test
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" > .env
+          echo "DIRECT_URL=$DIRECT_URL" >> .env
+          echo "NODE_ENV=test" >> .env
+          echo "LOG_LEVEL=error" >> .env
+          echo "WEB_URL=http://localhost:3000" >> .env
+          echo "JWT_ACCESS_SECRET=$(openssl rand -hex 32)" >> .env
+          echo "JWT_REFRESH_SECRET=$(openssl rand -hex 32)" >> .env
+
+      - run: pnpm --filter @recallify/api db:generate
+      - run: pnpm --filter @recallify/api db:deploy
+      # The production builds, because the service worker only exists there.
+      - run: pnpm build
+      - run: pnpm --filter @recallify/e2e exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/e2e/playwright-report
+            apps/e2e/test-results
+          retention-days: 7
+
+  lighthouse:
+    name: lighthouse
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: '9.12.0' }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo build --filter=@recallify/web...
+      # Public pages only: they need no API or database. Accessibility, best
+      # practices and SEO below 0.95 fail the job; performance only warns,
+      # because a shared runner's timing is not a measurement of the site.
+      - run: pnpm lighthouse
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci/reports
+          retention-days: 14

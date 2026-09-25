@@ -1,0 +1,12 @@
+[
+  {
+    "name": "FSRS engine (packages/fsrs, shipped to web and mobile)",
+    "path": "packages/fsrs/dist/*.js",
+    "limit": "9 kB"
+  },
+  {
+    "name": "Web app, every client chunk together",
+    "path": "apps/web/.next/static/chunks/**/*.js",
+    "limit": "500 kB"
+  }
+]
