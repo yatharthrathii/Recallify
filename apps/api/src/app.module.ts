@@ -14,6 +14,7 @@ import { HealthModule } from './health/health.module';
 import { MailModule } from './mail/mail.module';
 import { OptimizerModule } from './optimizer/optimizer.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RateLimitModule } from './rate-limit/rate-limit.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { SchedulingModule } from './scheduling/scheduling.module';
 import { StatsModule } from './stats/stats.module';
@@ -35,6 +36,7 @@ import { StatsModule } from './stats/stats.module';
       validate: validateEnv,
     }),
     PrismaModule,
+    RateLimitModule,
     MailModule,
     SchedulingModule,
     AuthModule,

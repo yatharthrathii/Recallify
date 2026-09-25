@@ -1,7 +1,7 @@
 import {
   BadGatewayException,
+  ForbiddenException,
   HttpException,
-  HttpStatus,
   Inject,
   Injectable,
   ServiceUnavailableException,
@@ -17,6 +17,7 @@ import type {
 import { addDays, startOfDay } from '../common/dates';
 import { DecksService } from '../decks/decks.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TooManyRequestsException } from '../rate-limit/rate-limit.service';
 import { parseDrafts, type ParsedDrafts } from './parse';
 import { RETRY_NUDGE, buildMessages, outputBudget } from './prompt';
 import {
@@ -49,12 +50,6 @@ function isLockBusy(error: unknown): boolean {
   return meta.includes('55P03') || /could not obtain lock/i.test(error.message);
 }
 
-/** Nest has no built-in 429; the problem filter titles errors from the class name. */
-class TooManyRequestsException extends HttpException {
-  constructor(message: string) {
-    super(message, HttpStatus.TOO_MANY_REQUESTS);
-  }
-}
 
 @Injectable()
 export class AiService {
@@ -110,6 +105,18 @@ export class AiService {
     // Before any allowance is touched: a request for a deck that is not yours
     // should cost nothing.
     await this.decks.assertOwned(userId, input.deckId);
+
+    // Generation is the one feature with a real cost per call, and a demo
+    // account is free to make. Anyone who wants drafts can make a real account.
+    const owner = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { isDemo: true },
+    });
+    if (owner.isDemo) {
+      throw new ForbiddenException(
+        'AI drafts are not available in the demo. Create a free account to use them.',
+      );
+    }
 
     const { reservationId, charge } = await this.reserve(userId, input.count);
 

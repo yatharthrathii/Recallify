@@ -17,11 +17,14 @@ import {
   ApiOperation,
   ApiServiceUnavailableResponse,
   ApiTags,
+  ApiTooManyRequestsResponse,
 } from '@nestjs/swagger';
 import { ProblemDetailsDto } from '../common/problem.dto';
 import { ApiCreated, ApiNoContent, ApiOk } from '../common/api-responses';
 import type { Request, Response } from 'express';
+import { clientIp, userAgent } from '../common/client';
 import { CurrentUser, type AuthenticatedUser } from '../common/current-user.decorator';
+import { DemoService } from '../demo/demo.service';
 import { AuthService } from './auth.service';
 import {
   AuthTokensDto,
@@ -44,6 +47,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly tokens: TokenService,
+    private readonly demo: DemoService,
   ) {}
 
   /**
@@ -89,20 +93,49 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokensDto> {
-    return this.respond(res, await this.auth.register(body, req.headers['user-agent']));
+    return this.respond(res, await this.auth.register(body, userAgent(req)));
   }
 
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Sign in' })
+  @ApiOperation({
+    summary: 'Sign in',
+    description:
+      'After 10 failed attempts for one address, or 50 from one client, answers 429 ' +
+      'for 15 minutes. Counted whether or not the address has an account.',
+  })
   @ApiOk(AuthTokensDto)
+  @ApiTooManyRequestsResponse({ description: 'Too many failed attempts.', type: ProblemDetailsDto })
   async login(
     @Body() body: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthTokensDto> {
-    return this.respond(res, await this.auth.login(body, req.headers['user-agent']));
+    return this.respond(res, await this.auth.login(body, userAgent(req), clientIp(req)));
+  }
+
+  /**
+   * A throwaway account with six months of simulated history, signed in.
+   * Deleted a day later. Five per client per hour.
+   */
+  @Public()
+  @Post('demo')
+  @ApiOperation({
+    summary: 'Open a demo account',
+    description:
+      'Creates a private account seeded with six months of history produced by the ' +
+      'scheduler itself, and signs in to it. It cannot be signed in to again and is ' +
+      'deleted after 24 hours.',
+  })
+  @ApiCreated(AuthTokensDto)
+  @ApiTooManyRequestsResponse({ description: 'Too many demo accounts.', type: ProblemDetailsDto })
+  async openDemo(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthTokensDto> {
+    const account = await this.demo.create(clientIp(req));
+    return this.respond(res, await this.tokens.issue(account.id, account.email, undefined, userAgent(req)));
   }
 
   /**
@@ -122,7 +155,7 @@ export class AuthController {
     @Body() body: { refreshToken?: string },
   ): Promise<AuthTokensDto> {
     const presented = req.cookies?.[REFRESH_COOKIE] ?? body?.refreshToken ?? '';
-    return this.respond(res, await this.tokens.rotate(presented, req.headers['user-agent']));
+    return this.respond(res, await this.tokens.rotate(presented, userAgent(req)));
   }
 
   @Public()

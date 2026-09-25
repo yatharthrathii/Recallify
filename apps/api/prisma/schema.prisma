@@ -252,3 +252,17 @@ model AiReport {
   @@index([createdAt])
   @@map("ai_reports")
 }
+
+// Counted events for rate limits: failed sign-ins, demo accounts made. Kept in
+// the database rather than in memory because the API runs on serverless
+// instances that share nothing, so a per-process counter would hand every
+// instance its own fresh allowance. Rows older than a day are swept on write.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+  @@index([createdAt])
+  @@map("rate_limit_hits")
+}
