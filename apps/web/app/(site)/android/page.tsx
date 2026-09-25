@@ -26,7 +26,7 @@ const BUILT = [
 
 const LEFT = [
   'The screens themselves, designed for one thumb rather than shrunk from the desktop.',
-  'A local copy of your cards, so a session can start with no connection at all rather than only survive losing one.',
+  'A full local copy of every deck, so any of them can be studied with no connection, not only the session last loaded.',
   'The Play Store listing, and the review period that comes with it.',
 ];
 
@@ -121,8 +121,9 @@ export default function AndroidPage() {
               rating buttons sit at the bottom of the display, and it can be added to your
               home screen from the browser menu. If the connection drops in the middle of
               a session, <Term>keep answering</Term>. The answers are stored on the device
-              and sent when it comes back. What it cannot do yet is open with no
-              connection at all.
+              and sent when it comes back. Pages you have opened once on the device
+              open again with no connection, including the review screen with the
+              cards it last loaded.
             </p>
           </Reveal>
         </div>

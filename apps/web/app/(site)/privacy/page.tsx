@@ -82,7 +82,10 @@ export default function PrivacyPage() {
           Signing in sets cookies that hold your session. They are marked so that
           JavaScript cannot read them, and they exist for authentication only, not to
           follow you between sites. Your theme choice and any answers waiting to be sent
-          are kept in your browser's own storage on your device.
+          are kept in your browser's own storage on your device. So that the app opens
+          without a connection, the browser also keeps a copy of the app pages you have
+          opened and of what they last loaded, such as your next review cards. That copy
+          is deleted when you sign out.
         </p>
       </SiteSection>
 

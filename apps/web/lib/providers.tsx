@@ -9,7 +9,7 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query';
 import { MotionConfig } from 'motion/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
 import { api } from './api';
 
@@ -25,7 +25,20 @@ function handleAuthLoss(error: unknown): void {
   window.location.assign(`/login?next=${encodeURIComponent(here)}`);
 }
 
+/**
+ * The offline shell (public/sw.js). Production only: in development a cached
+ * page is a stale page, and hot reload is what should win.
+ */
+function useServiceWorker(): void {
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return;
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  }, []);
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
+  useServiceWorker();
   const [queryClient] = useState(
     () =>
       new QueryClient({

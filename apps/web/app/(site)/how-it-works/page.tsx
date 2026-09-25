@@ -74,7 +74,7 @@ export default function HowItWorksPage() {
                 key={step.title}
                 className="grid gap-x-8 gap-y-2 border-b border-line-strong py-8 sm:grid-cols-[72px_minmax(0,1fr)]"
               >
-                <span className="font-display text-[44px] font-medium leading-none text-line-strong">
+                <span className="font-display text-[44px] font-medium leading-none text-ink-faint">
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <div>
