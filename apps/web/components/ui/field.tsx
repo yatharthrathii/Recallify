@@ -1,10 +1,13 @@
-import { useId, type ComponentProps, type ReactNode } from 'react';
+'use client';
+
+import { Eye, EyeOff } from 'lucide-react';
+import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
 const control = cn(
   'w-full rounded-md border border-line-strong bg-surface px-3 text-ui text-ink',
   'placeholder:text-ink-faint',
-  'transition-colors duration-[90ms] hover:border-ink-faint',
+  'transition-colors duration-90 hover:border-ink-faint',
   'focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/25',
   'disabled:cursor-not-allowed disabled:bg-surface-alt disabled:text-ink-muted',
   'aria-[invalid=true]:border-danger aria-[invalid=true]:ring-danger/20',
@@ -72,6 +75,49 @@ export function TextField({
           className={cn(control, 'h-10', className)}
           {...rest}
         />
+      )}
+    </FieldShell>
+  );
+}
+
+/**
+ * A password with a way to see what was typed. Ten characters of dots hide a
+ * typo as well as they hide the password, and on a phone that is most of the
+ * reason sign-in fails. The toggle never submits the form and never changes
+ * what the browser autofills.
+ */
+export function PasswordField({
+  label,
+  hint,
+  error,
+  aside,
+  className,
+  ...rest
+}: Shared & Omit<ComponentProps<'input'>, 'type'>) {
+  const [shown, setShown] = useState(false);
+  return (
+    <FieldShell label={label} hint={hint} error={error} aside={aside}>
+      {({ id, describedBy, invalid }) => (
+        <div className="relative">
+          <input
+            id={id}
+            type={shown ? 'text' : 'password'}
+            aria-describedby={describedBy}
+            aria-invalid={invalid || undefined}
+            className={cn(control, 'h-10 pr-10', className)}
+            {...rest}
+          />
+          <button
+            type="button"
+            aria-label={shown ? 'Hide password' : 'Show password'}
+            aria-pressed={shown}
+            tabIndex={-1}
+            onClick={() => setShown((v) => !v)}
+            className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-ink-faint transition-colors hover:text-ink"
+          >
+            {shown ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          </button>
+        </div>
       )}
     </FieldShell>
   );

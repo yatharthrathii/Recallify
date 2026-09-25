@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Stagger, StaggerItem } from '@/components/motion';
 import { Button } from '@/components/ui/button';
-import { TextField, fieldError } from '@/components/ui/field';
+import { PasswordField, TextField, fieldError } from '@/components/ui/field';
 import { messageOf } from '@/components/ui/misc';
 import { login, register } from '@/lib/auth';
 
@@ -55,7 +55,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   };
 
   return (
-    <Stagger gap={0.09} delay={0.1} className="w-full max-w-[400px]">
+    <Stagger gap={0.09} delay={0.1} className="w-full max-w-100">
       <StaggerItem>
         <h1 className="font-display text-[40px] font-semibold leading-[1.02] text-ink sm:text-[52px]">
           {isRegister ? 'Create your account' : 'Sign in'}
@@ -91,13 +91,22 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             autoFocus
             error={fieldError(errors, 'email')}
           />
-          <TextField
+          <PasswordField
             label="Password"
-            type="password"
             autoComplete={isRegister ? 'new-password' : 'current-password'}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            aside={
+              isRegister ? undefined : (
+                <Link
+                  href="/forgot-password"
+                  className="link-sweep text-caption font-medium text-ink-muted hover:text-ink"
+                >
+                  Forgot password?
+                </Link>
+              )
+            }
             hint={
               isRegister
                 ? 'At least 10 characters. Length matters more than symbols.'
