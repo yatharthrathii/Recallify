@@ -18,7 +18,7 @@ export const light = {
   borderStrong: '#BAB2B5',
   text: '#123C69', // navy ink, never black
   textMuted: '#55637F',
-  textFaint: '#857F8B',
+  textFaint: '#66606E',
 } as const;
 
 export const dark = {
@@ -29,7 +29,7 @@ export const dark = {
   borderStrong: '#4C5C68',
   text: '#D3D9D4',
   textMuted: '#9DB0B4',
-  textFaint: '#748D92',
+  textFaint: '#8CA0A6',
 } as const;
 
 /**
