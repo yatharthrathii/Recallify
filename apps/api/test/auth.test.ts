@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { MailService } from '../src/mail/mail.service';
 import { API, registerUser, startHarness, uniqueEmail, type Harness, type TestUser } from './harness';
@@ -199,6 +200,40 @@ describe('auth', () => {
       .post(`${API}/auth/reset-password`)
       .send({ token: 'x'.repeat(43), password: 'a-brand-new-password' })
       .expect(400);
+  });
+
+  it('shuts sign-in for an address after ten failures, without revealing whether it exists', async () => {
+    const user = await registerUser(h, 'throttle');
+    created.push(user);
+    const ghost = uniqueEmail('throttle-ghost');
+
+    for (const email of [user.email, ghost]) {
+      // A different client address for each attempt, so only the per-account
+      // counter can be what trips.
+      for (let i = 0; i < 10; i += 1) {
+        await h
+          .http()
+          .post(`${API}/auth/login`)
+          .set('x-client-ip', `test-${randomUUID()}`)
+          .send({ email, password: 'not-the-right-password' })
+          .expect(401);
+      }
+      const blocked = await h
+        .http()
+        .post(`${API}/auth/login`)
+        .set('x-client-ip', `test-${randomUUID()}`)
+        .send({ email, password: 'not-the-right-password' })
+        .expect(429);
+      expect(blocked.body.detail).toMatch(/15 minutes/);
+    }
+
+    // Even the right password waits: otherwise the limit is only a delay.
+    await h
+      .http()
+      .post(`${API}/auth/login`)
+      .set('x-client-ip', `test-${randomUUID()}`)
+      .send({ email: user.email, password: 'correct-horse-battery' })
+      .expect(429);
   });
 
   it('stores refresh tokens hashed, never raw', async () => {

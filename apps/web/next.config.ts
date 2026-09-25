@@ -19,6 +19,19 @@ const nextConfig: NextConfig = {
   // Auto-memoises components, which keeps useMemo noise out of the review hot
   // path -- see the <50ms budget in docs/05-ENGINEERING.md.
   reactCompiler: true,
+  // The service worker must never be cached by the browser's HTTP cache, or a
+  // fixed bug would keep being served from the old copy for a day.
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        ],
+      },
+    ];
+  },
   // No rewrites. /api/v1 is a real route handler (app/api/v1/[...path]) because
   // a rewrite cannot read the httpOnly cookie and attach the bearer header.
 };

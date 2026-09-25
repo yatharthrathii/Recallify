@@ -80,7 +80,7 @@
   --border-strong: #bab2b5;
   --text: #123c69;
   --text-muted: #55637f;
-  --text-faint: #857f8b;
+  --text-faint: #66606e;
 
   /* Brand. Accent is what wants attention; brand is the deep block colour
      behind full-bleed bands; highlight is the soft tint behind a marked word. */
@@ -126,7 +126,7 @@
     --border-strong: #4c5c68;
     --text: #d3d9d4;
     --text-muted: #9db0b4;
-    --text-faint: #748d92;
+    --text-faint: #8ca0a6;
 
     --accent: #ee8fa9;
     --brand: #124e66;
@@ -159,7 +159,7 @@
   --border-strong: #4c5c68;
   --text: #d3d9d4;
   --text-muted: #9db0b4;
-  --text-faint: #748d92;
+  --text-faint: #8ca0a6;
 
   --accent: #ee8fa9;
   --brand: #124e66;

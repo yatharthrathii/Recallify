@@ -1,0 +1,50 @@
+name: Uptime
+
+# Checks the live API and web app every 30 minutes and fails, which emails the
+# repository owner, when either stops answering.
+#
+# It pings /health, which does not touch the database, on purpose. Pinging
+# /ready would keep the Neon compute awake around the clock and spend the free
+# tier's monthly compute hours on nothing. /ready is checked once a day
+# instead, to catch a database that is down rather than merely asleep.
+#
+# The live URLs are the defaults. Repository variables API_URL and WEB_URL
+# (Settings > Secrets and variables > Actions > Variables) override them, for
+# a custom domain later.
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+    # Once a day, 09:15 in India: the database check below.
+    - cron: '45 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: ping
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      API_URL: ${{ vars.API_URL || 'https://recallify-api.vercel.app' }}
+      WEB_URL: ${{ vars.WEB_URL || 'https://recallify-five.vercel.app' }}
+    steps:
+      - name: API answers
+        run: |
+          # A cold serverless start can take a few seconds; retry before failing.
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 30 \
+            "$API_URL/health"
+
+      - name: Database answers (once a day)
+        if: github.event.schedule == '45 3 * * *' || github.event_name == 'workflow_dispatch'
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 10 --max-time 60 \
+            "$API_URL/ready"
+
+      - name: Web app answers
+        if: env.WEB_URL != ''
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 --max-time 30 \
+            --output /dev/null "$WEB_URL/"

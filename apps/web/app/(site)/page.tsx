@@ -41,7 +41,7 @@ const FACTS = [
   'No card required',
   'Your data stays yours',
   'Delete your account in one step',
-  'Works offline mid session',
+  'Reviews work offline',
 ];
 
 const FOR = [
@@ -104,7 +104,7 @@ export default async function LandingPage() {
                 key={item.title}
                 className="group grid gap-x-8 gap-y-2 border-b border-line-strong py-8 sm:grid-cols-[72px_minmax(0,1fr)]"
               >
-                <span className="font-display text-[44px] font-medium leading-none text-line-strong transition-colors duration-500 group-hover:text-accent">
+                <span className="font-display text-[44px] font-medium leading-none text-ink-faint transition-colors duration-500 group-hover:text-accent">
                   {String(i + 1).padStart(2, '0')}
                 </span>
                 <div className="transition-transform duration-500 ease-[var(--ease-out-expo)] group-hover:translate-x-2">

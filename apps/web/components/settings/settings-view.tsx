@@ -352,11 +352,19 @@ function Account({ user }: { user: CurrentUser }) {
         </p>
         <div className="flex gap-2">
           <Button onClick={() => void leave()}>Sign out</Button>
-          <Button variant="danger" onClick={() => setConfirming(true)}>
-            Delete account
-          </Button>
+          {user.isDemo ? null : (
+            <Button variant="danger" onClick={() => setConfirming(true)}>
+              Delete account
+            </Button>
+          )}
         </div>
       </div>
+      {user.isDemo ? (
+        <p className="mt-3 text-caption text-ink-muted">
+          A demo account deletes itself a day after it was opened, with everything in
+          it. Signing out ends it now: it cannot be signed in to again.
+        </p>
+      ) : null}
 
       <ConfirmDialog
         open={confirming}

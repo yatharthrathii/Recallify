@@ -17,6 +17,7 @@ import type { Env } from '../config/env';
 import { MailService, MailUnavailableError } from '../mail/mail.service';
 import { passwordResetEmail } from '../mail/templates';
 import { PrismaService } from '../prisma/prisma.service';
+import { RateLimitService } from '../rate-limit/rate-limit.service';
 import { PasswordService } from './password.service';
 import { type IssuedTokens, TokenService } from './token.service';
 
@@ -25,6 +26,17 @@ const RESET_TTL_MINUTES = 30;
 
 /** Links one address can ask for in an hour. Enough for a typo; not a flood. */
 const RESET_LINKS_PER_HOUR = 3;
+
+/**
+ * Failed sign-ins allowed before the door shuts for a while. Ten per account
+ * is generous for a person who has forgotten which password they used and
+ * useless to someone guessing. Fifty per address stops one machine working
+ * through many accounts; it is set high because a college or an office can
+ * put hundreds of people behind one address.
+ */
+const LOGIN_WINDOW_MS = 15 * 60_000;
+const LOGIN_FAILURES_PER_ACCOUNT = 10;
+const LOGIN_FAILURES_PER_ADDRESS = 50;
 
 /** A password hash to compare against when the email does not exist. */
 const DUMMY_HASH =
@@ -40,6 +52,7 @@ export class AuthService {
     private readonly tokens: TokenService,
     private readonly mail: MailService,
     private readonly config: ConfigService<Env, true>,
+    private readonly limits: RateLimitService,
   ) {}
 
   async register(input: RegisterRequest, userAgent?: string): Promise<IssuedTokens> {
@@ -62,7 +75,19 @@ export class AuthService {
     return this.tokens.issue(user.id, user.email, undefined, userAgent);
   }
 
-  async login(input: LoginRequest, userAgent?: string): Promise<IssuedTokens> {
+  async login(input: LoginRequest, userAgent?: string, ip = 'unknown'): Promise<IssuedTokens> {
+    // Counted per address typed, whether or not it has an account, so a 429
+    // says nothing about which addresses exist.
+    const accountKey = `login:account:${input.email}`;
+    const addressKey = `login:ip:${ip}`;
+    await this.limits.assertUnder(
+      [
+        { key: accountKey, limit: LOGIN_FAILURES_PER_ACCOUNT, windowMs: LOGIN_WINDOW_MS },
+        { key: addressKey, limit: LOGIN_FAILURES_PER_ADDRESS, windowMs: LOGIN_WINDOW_MS },
+      ],
+      'Too many sign-in attempts. Wait 15 minutes, or reset your password.',
+    );
+
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
       select: { id: true, email: true, passwordHash: true },
@@ -74,7 +99,10 @@ export class AuthService {
     const ok = await this.passwords.verify(user?.passwordHash ?? DUMMY_HASH, input.password);
 
     // One message for both failures, for the same reason.
-    if (!user || !ok) throw new UnauthorizedException('Email or password is incorrect.');
+    if (!user || !ok) {
+      await this.limits.record(accountKey, addressKey);
+      throw new UnauthorizedException('Email or password is incorrect.');
+    }
 
     return this.tokens.issue(user.id, user.email, undefined, userAgent);
   }
@@ -96,9 +124,10 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true },
+      select: { id: true, email: true, isDemo: true },
     });
-    if (!user) return;
+    // Demo addresses are made up; mail to them would only bounce.
+    if (!user || user.isDemo) return;
 
     const recent = await this.prisma.passwordReset.count({
       where: { userId: user.id, createdAt: { gt: new Date(Date.now() - 3_600_000) } },

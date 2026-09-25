@@ -43,6 +43,21 @@ export default tseslint.config(
     },
   },
   {
+    // The service worker is plain script run by the browser, not a module the
+    // bundler sees, so it gets the worker's globals rather than Node's.
+    files: ['apps/web/public/sw.js'],
+    languageOptions: {
+      sourceType: 'script',
+      globals: {
+        self: 'readonly',
+        caches: 'readonly',
+        fetch: 'readonly',
+        URL: 'readonly',
+        Response: 'readonly',
+      },
+    },
+  },
+  {
     // The one place colour is allowed to exist.
     files: ['packages/tokens/**/*.ts'],
     rules: { 'no-restricted-syntax': 'off' },

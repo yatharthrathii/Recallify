@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const overview = useOverview();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  const signOut = async () => {
+  const signOut = async (to = '/login') => {
     try {
       await logout();
     } catch {
@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     // Another account must never see this one's cached decks.
     queryClient.clear();
     toast('Signed out.');
-    router.replace('/login');
+    router.replace(to);
   };
 
   const due = overview.data?.dueToday ?? 0;
@@ -212,6 +212,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <main id="main" className="pb-24 lg:pb-0 lg:pl-60">
+        {me.data?.isDemo ? <DemoBanner onLeave={() => void signOut('/register')} /> : null}
         {/* Keyed by path, so every page plays its own entrance once. The
             movement itself belongs to PageShell; this is only the cross-fade. */}
         <motion.div
@@ -386,5 +387,30 @@ export function Section({
       </div>
       {children}
     </Reveal>
+  );
+}
+
+/**
+ * Says plainly that this account is not theirs to keep, and how to get one
+ * that is. Leaving signs the demo out first, because the sign-up page is not
+ * offered to someone already signed in.
+ */
+function DemoBanner({ onLeave }: { onLeave: () => void }) {
+  return (
+    <div className="border-b border-line bg-highlight/60 px-4 py-2.5 sm:px-8">
+      <p className="mx-auto flex max-w-310 flex-wrap items-center gap-x-3 gap-y-1 text-ui text-ink">
+        <span>
+          This is a demo account with six months of simulated history. It is deleted
+          after a day.
+        </span>
+        <button
+          type="button"
+          onClick={onLeave}
+          className="link-sweep font-medium text-ink"
+        >
+          Make your own, free
+        </button>
+      </p>
+    </div>
   );
 }

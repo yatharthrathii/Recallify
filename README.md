@@ -1,52 +1,155 @@
 # Recallify
 
-[![CI](https://github.com/yatharthrathii/Recallify/actions/workflows/ci.yml/badge.svg?branch=v2)](https://github.com/yatharthrathii/Recallify/actions/workflows/ci.yml)
+[![CI](https://github.com/yatharthrathii/Recallify/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yatharthrathii/Recallify/actions/workflows/ci.yml)
+[![Uptime](https://github.com/yatharthrathii/Recallify/actions/workflows/uptime.yml/badge.svg)](https://github.com/yatharthrathii/Recallify/actions/workflows/uptime.yml)
 
-A spaced-repetition scheduler built on FSRS, with the algorithm made visible.
+A flashcard app built on FSRS that shows its work: the forgetting curve of every
+card, why a card is due today, and what your own review history says about the
+default parameters.
 
-Every serious flashcard app hides its scheduler. Anki has run FSRS by default
-since 2023 and shows the user almost nothing about it. Recallify's bet is that
-the scheduler is the interesting part, so it surfaces the memory model instead of
-hiding it: the forgetting curve per card, why a given card is due right now, and
-what your own review history says about the default parameters.
+![A visitor opens the demo, reviews three cards with the reasoning panel open, and looks at a year of stats](docs/assets/recallify-demo.gif)
 
-> **Status: phase 3 of 9 complete.** The scheduler works end to end, and
-> parameters can now be fitted to a user's own review history and backtested
-> against the defaults. There is no API, no database and no UI yet. This
-> README will not claim a feature before the code does it — the
-> [v1 rewrite](#why-v2-exists) happened because an earlier README did exactly
-> that.
+**Live:** [recallify-five.vercel.app](https://recallify-five.vercel.app)
+&nbsp;·&nbsp; **API docs:** [recallify-api.vercel.app/docs](https://recallify-api.vercel.app/docs)
 
-## Build status
+No signup needed to look around: **Try the demo** on the front page opens a
+private account with six months of history, deleted after a day.
 
-| Phase | | |
-|---|---|---|
-| 0 | Corrections to v1 | done |
-| 1 | Monorepo, Prisma schema, Docker, CI | done |
-| 2 | FSRS engine: memory model + scheduler | done |
-| 3 | Parameter optimizer + backtest | done |
-| 4 | API | pending |
-| 5 | AI card generation | pending |
-| 6 | Web client | pending |
-| 7 | Deploy, seed data, public demo | pending |
-| 8 | Anki import + Memory Report | pending |
-| 9 | Android app | pending |
+## What it does
 
-Full plan: [`docs/06-ROADMAP.md`](docs/06-ROADMAP.md).
+- **Schedules every card with FSRS**, implemented from the published algorithm
+  in [`packages/fsrs`](packages/fsrs), with no dependencies and no I/O. The same
+  function runs on the server, in the browser for instant ratings, and later on
+  the phone.
+- **Shows the model.** Each card has its forgetting curve. During review, one key
+  shows the stability, the chance of recall right now, and the date it slips
+  below your target. The retention slider prices a higher target in daily
+  reviews before you save it.
+- **Fits the scheduler to you.** After 400 reviews, gradient descent on your own
+  log fits new parameters, backtested against the defaults side by side before
+  you adopt them.
+- **Keeps working offline.** Answers go to an outbox and are sent when the
+  connection returns, each with an id made on the device, so a retry is never
+  counted twice. A service worker lets the review screen open with no connection,
+  once it has been opened online on that device.
+- **Drafts cards with AI** from a topic or your notes (Groq), which you approve one
+  by one. Rate limited per user, counted in Postgres so serverless instances
+  cannot each hand out a fresh allowance.
+- **Accounts done properly.** Argon2id passwords, rotating refresh tokens with
+  reuse detection, httpOnly cookies behind a same-origin proxy so no token ever
+  reaches JavaScript, password reset by one-shot emailed link, and a sign-in
+  limit that does not reveal which addresses exist.
+
+### What it does not do
+
+- Import from other apps. Planned, not built.
+- Run as a native app. The Android app is in development; the web app is built
+  phone first and can be added to the home screen.
+- Promise fewer reviews. A model fitted to someone who forgets quickly asks for
+  more of them, and the app says so.
+
+## How it is built
+
+```mermaid
+flowchart LR
+  subgraph Browser
+    UI[Next.js pages] --> SW[Service worker]
+    UI --> OB[(Outbox in localStorage)]
+  end
+  UI -- same origin --> BFF[Next.js route handlers<br/>httpOnly cookies]
+  BFF -- bearer token --> API[NestJS API]
+  API --> DB[(PostgreSQL on Neon)]
+  API --> Groq[Groq, card drafts]
+  API --> Brevo[Brevo, reset email]
+  FSRS[packages/fsrs] -. same code .-> UI
+  FSRS -. same code .-> API
+```
+
+A pnpm and Turborepo monorepo. Everything is TypeScript.
+
+```
+apps/
+  api/          NestJS 11, REST and OpenAPI, Prisma 6, PostgreSQL
+  web/          Next.js 16 App Router, React 19, Tailwind 4, motion
+  e2e/          Playwright, against the production builds
+packages/
+  fsrs/         the scheduler: pure, zero dependencies, 100% covered
+  optimizer/    fits parameters to a review log, with a backtest
+  contracts/    Zod schemas: validation, types and OpenAPI, defined once
+  core/         API client, session logic, outbox, formatting, React hooks
+  tokens/       design tokens, the only place a colour value may exist
+  config/       shared TypeScript and ESLint presets
+```
+
+### Data model
+
+The review log is append only. Card state is a cache that can be rebuilt by
+replaying it, which is what the optimizer and the backtest both do.
+
+```mermaid
+erDiagram
+  User ||--o{ Deck : owns
+  User ||--o{ Card : owns
+  Deck ||--o{ Card : contains
+  Card ||--o{ Review : "append only log"
+  User ||--|| UserStats : has
+  User ||--o{ RefreshToken : "rotating sessions"
+  User ||--o{ PasswordReset : "one-shot links"
+  User ||--o{ AiUsage : "draft quota"
+  Card {
+    string state
+    float stability
+    float difficulty
+    datetime dueAt
+  }
+  Review {
+    uuid id "made on the device"
+    int rating
+    float retrievability
+    datetime reviewedAt
+  }
+```
+
+The full schema, with the reasoning behind each table, is in
+[`docs/03-DATA-AND-API.md`](docs/03-DATA-AND-API.md).
+
+## What checks it
+
+Every push runs five jobs in [CI](.github/workflows/ci.yml):
+
+| Job | What it proves |
+|---|---|
+| lint, typecheck, build | Zero lint warnings allowed. Size budgets on the engine and the web bundle |
+| unit tests | About 200 tests over the packages. `packages/fsrs` is held at 100% coverage |
+| integration tests | About 90 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets |
+| end to end | Playwright on the production builds, desktop and phone: sign up to review to stats, demo, offline review |
+| lighthouse | Accessibility, best practices and SEO must stay at 95 or above on public pages |
+
+The FSRS implementation is checked against
+[`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs), the reference
+TypeScript implementation, across 19,000 generated cases. `ts-fsrs` is a test
+dependency only and is never shipped. FSRS itself is the work of Jarrett Ye and
+the Open Spaced Repetition community; this project implements it, it did not
+invent it.
+
+A separate [uptime workflow](.github/workflows/uptime.yml) checks the live API
+and web app every 30 minutes.
 
 ## Running it
 
-Requires Node 22, pnpm 9, and Docker.
+Needs Node 22, pnpm 9, and either Docker or a Postgres connection string.
 
 ```bash
 pnpm install
-cp .env.example .env          # then fill in the two JWT secrets
-pnpm up                       # postgres + api via docker compose
-pnpm db:migrate               # apply the schema
-pnpm dev                      # api on :3001, web on :3000
+cp .env.example .env     # fill in the two JWT secrets
+pnpm up                  # local Postgres in Docker
+pnpm db:migrate          # apply the schema
+pnpm db:seed             # optional: an account with six months of history
+pnpm dev                 # API on :3001, web on :3000
 ```
 
-Generate the JWT secrets with `openssl rand -base64 48`, once each.
+Generate each JWT secret with `openssl rand -base64 48`. The seeded account is
+`dev@recallify.local` with the password `correct-horse-battery`.
 
 | | |
 |---|---|
@@ -55,39 +158,17 @@ Generate the JWT secrets with `openssl rand -base64 48`, once each.
 | API docs | http://localhost:3001/docs |
 | Health | http://localhost:3001/health |
 
-## Layout
+The AI key (`GROQ_API_KEY`) and the email key (`BREVO_API_KEY`) are optional.
+Without them, drafting answers 503 and reset links are printed to the API log
+instead of sent.
 
+```bash
+pnpm lint && pnpm typecheck      # what CI runs first
+pnpm test                        # unit and integration tests
+pnpm build && pnpm test:e2e      # end to end, on the production builds
+pnpm size                        # bundle budgets
+pnpm lighthouse                  # accessibility and SEO on public pages
 ```
-apps/
-  api/          NestJS 11 — REST + OpenAPI, Prisma, PostgreSQL
-  web/          Next.js 16 — App Router, React 19, Tailwind 4
-packages/
-  fsrs/         the scheduling algorithm — pure, zero-dependency
-  optimizer/    fits parameters to a review log; server-only
-  contracts/    Zod schemas: validation + types + OpenAPI, defined once
-  core/         logic shared with the future mobile client
-  tokens/       design tokens — the only place a colour value may exist
-  config/       shared tsconfig presets
-infra/          docker-compose, API Dockerfile
-docs/           architecture, data model, design system, roadmap
-```
-
-`packages/fsrs` has no dependencies and performs no I/O, so the same code runs on
-the server as the source of truth, in the browser for instant optimistic rating,
-and later on the phone for fully offline scheduling. Server and client cannot
-disagree about scheduling because they run the same function.
-
-## On FSRS
-
-FSRS is a published algorithm built on the DSR (difficulty / stability /
-retrievability) memory model, with papers at ACM KDD and IEEE TKDE, and it is
-what Anki uses by default. It is **not** original to this project.
-
-[`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs) is the established
-TypeScript implementation. This repository implements the algorithm from scratch
-because doing so is the point of the project, and it uses `ts-fsrs` as a **test
-oracle**: differential tests assert that both implementations agree across
-19,000 generated cases. It is a dev dependency, never shipped.
 
 ## Documentation
 
@@ -98,19 +179,17 @@ oracle**: differential tests assert that both implementations agree across
 | [`docs/03-DATA-AND-API.md`](docs/03-DATA-AND-API.md) | Schema, endpoints, auth |
 | [`docs/04-DESIGN-SYSTEM.md`](docs/04-DESIGN-SYSTEM.md) | Colour, type, motion |
 | [`docs/05-ENGINEERING.md`](docs/05-ENGINEERING.md) | Budgets, sync, testing, security |
-| [`docs/06-ROADMAP.md`](docs/06-ROADMAP.md) | Build order |
+| [`docs/06-ROADMAP.md`](docs/06-ROADMAP.md) | Build order, and what is next |
 
-## Why v2 exists
+## Why this is version 2
 
-v1 was a React and Firebase app. Its README claimed spaced repetition and
-"AI-Powered" learning; the code implemented neither, and a card was literally
-`{ question, answer }`. The AI key was a `VITE_` variable, which meant it was
-inlined into the production bundle and publicly readable.
-
-The description was corrected first, then the rebuild started. v1 remains in
-[`../recallify`](../recallify) with its corrections and its own list of known
-bugs, unedited otherwise.
+Version 1 was a React and Firebase app whose README claimed spaced repetition
+and AI features that the code did not implement, and whose AI key was readable
+in the production bundle. Version 2 is a rebuild held to one rule: nothing is
+claimed that the code does not do. Version 1 is kept, unedited apart from the
+corrections, on the [`v1-legacy`](https://github.com/yatharthrathii/Recallify/tree/v1-legacy)
+branch.
 
 ## License
 
-MIT
+[MIT](LICENSE). Made by [Yatharth Rathi](https://github.com/yatharthrathii).

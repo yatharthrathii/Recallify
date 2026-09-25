@@ -213,9 +213,10 @@ is `/docs-json`; this table is the intent, that is the truth.
 
 ```
 POST   /auth/register
-POST   /auth/login
+POST   /auth/login            429 after 10 failures per address or 50 per client in 15 minutes
 POST   /auth/refresh          rotation + reuse detection
 POST   /auth/logout           revokes the whole family
+POST   /auth/demo             a private account with six months of simulated history; 5 per client per hour
 POST   /auth/forgot-password  emails a one-shot link; 202 whether or not the address exists
 POST   /auth/reset-password   spends the link, sets the password, signs out every device
 GET    /auth/me

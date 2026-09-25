@@ -17,10 +17,31 @@ import {
  * into httpOnly cookies, and answers the page with nothing but success.
  */
 
-async function callApi(action: string, body: unknown): Promise<Response> {
+/**
+ * The API sees this server, not the visitor. Their address and browser are
+ * passed along so rate limits count people rather than the web app, and the
+ * session list shows the browser that signed in rather than Node.
+ */
+function forwarded(request: Request): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
+    '';
+  if (ip) headers['x-client-ip'] = ip;
+  const agent = request.headers.get('user-agent');
+  if (agent) headers['user-agent'] = agent;
+  return headers;
+}
+
+async function callApi(
+  action: string,
+  body: unknown,
+  extra: Record<string, string> = {},
+): Promise<Response> {
   return fetch(`${API_ORIGIN}/api/v1/auth/${action}`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...extra },
     body: JSON.stringify(body ?? {}),
     cache: 'no-store',
   });
@@ -45,9 +66,9 @@ export async function POST(
   const jar = await cookies();
 
   try {
-    if (action === 'login' || action === 'register') {
+    if (action === 'login' || action === 'register' || action === 'demo') {
       const body: unknown = await request.json().catch(() => ({}));
-      const upstream = await callApi(action, body);
+      const upstream = await callApi(action, body, forwarded(request));
       if (!upstream.ok) return passThroughError(upstream);
 
       const response = NextResponse.json({ ok: true }, { status: upstream.status });
@@ -59,7 +80,7 @@ export async function POST(
     // it is, status and all.
     if (action === 'forgot-password' || action === 'reset-password') {
       const body: unknown = await request.json().catch(() => ({}));
-      const upstream = await callApi(action, body);
+      const upstream = await callApi(action, body, forwarded(request));
       if (!upstream.ok) return passThroughError(upstream);
       return new NextResponse(null, { status: 204 });
     }
@@ -75,7 +96,7 @@ export async function POST(
         return response;
       }
 
-      const upstream = await callApi('refresh', { refreshToken });
+      const upstream = await callApi('refresh', { refreshToken }, forwarded(request));
       if (!upstream.ok) {
         // Expired, revoked, or replayed. Whichever it was, this session is over.
         const response = new NextResponse(await upstream.text(), {

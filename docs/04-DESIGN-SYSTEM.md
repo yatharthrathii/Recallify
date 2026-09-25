@@ -65,7 +65,7 @@ export const light = {
   borderStrong:'#BAB2B5',
   text:      '#123C69',   // navy ink, never black
   textMuted: '#55637F',
-  textFaint: '#857F8B',
+  textFaint: '#66606E',
 };
 
 export const dark = {
@@ -76,7 +76,7 @@ export const dark = {
   borderStrong:'#4C5C68',
   text:      '#D3D9D4',
   textMuted: '#9DB0B4',
-  textFaint: '#748D92',
+  textFaint: '#8CA0A6',
 };
 
 export const brand       = { accent: '#AC3B61', brand: '#123C69', onBrand: '#EEE2DC', highlight: '#EDC7B7' };
@@ -92,7 +92,11 @@ export const brandOnDark = { accent: '#EE8FA9', brand: '#124E66', onBrand: '#D3D
   a material.
 
 Every pairing was measured: body text is 8.8:1 in light and 10.2:1 in dark,
-muted text 4.8:1 and 6.5:1, the accent 4.7:1 and 6.3:1.
+muted text 4.8:1 and 6.5:1, the accent 4.7:1 and 6.3:1. Faint text, the
+lightest text allowed anywhere, is 4.8:1 on the page and 5.4:1 on a surface in
+light, 5.3:1 and 4.7:1 in dark. It was lighter until Lighthouse measured it at
+3.1:1 in phase 7; Lighthouse CI now fails the build if accessibility drops
+below 0.95, so a pale label cannot come back unnoticed.
 
 ### The memory scale — this is the product's color
 
