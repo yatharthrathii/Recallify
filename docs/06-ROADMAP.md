@@ -172,7 +172,7 @@ second simultaneous generation for the same account is refused at once.
 
 ---
 
-## Phase 6 — Web (6 days) · done, two items open
+## Phase 6 — Web (6 days) · done
 
 - [x] Design tokens → Tailwind `@theme`; `PageShell`; Button/Field/Dialog
 - [x] Auth pages, deck list, card editor
@@ -187,11 +187,16 @@ second simultaneous generation for the same account is refused at once.
 - [x] Skeletons, empty states, error states for every route
 - [x] Command palette
 - [x] PWA manifest
-- [ ] **Offline review shell.** The outbox survives a dropped connection
-      mid-session, but there is no service worker, so the app does not open
-      offline. Not claimed anywhere in the UI.
-- [ ] **View Transitions.** Card changes use `motion` instead. Same effect,
-      and it respects reduced motion through one config.
+- [x] **Offline review shell.** `public/sw.js`: build files cache first, app
+      pages and API reads network first with the last answer kept, and an
+      offline page for anything never opened. The review screen reopens with no
+      connection and answers wait in the outbox. Signing in or out clears the
+      cached pages and data. Covered by an E2E test.
+- [x] **View Transitions: decided against, phase 7.** React's
+      `<ViewTransition>` is only in canary builds (19.2.8 has `Activity`, not
+      `ViewTransition`), and Next's flag depends on it. Page and card changes
+      use `motion`, which gives the same cross-fade and honours reduced motion
+      through one `MotionConfig`. Revisit when it reaches a stable React.
 
 Verified by driving the real stack in a browser: 20 steps from "signed-out
 visit is redirected" through a full keyboard review session to "deleted account
@@ -203,14 +208,26 @@ horizontal-overflow measurement on each.
 
 ---
 
-## Phase 7 — Make it findable (4 days)
+## Phase 7 — Make it findable (4 days) · done in code, two steps are Yatharth's
 
-- **Seed script + demo account** — use `packages/fsrs` itself to simulate a
-  realistic learner over 6 months. Never random data; the curve must look real.
-- Deploy: Neon + Vercel (web and API), uptime ping to `/health`
-- Playwright E2E in CI; Lighthouse CI; size-limit
-- README: what it is, `docker compose up`, schema diagram, Swagger link, demo
-  link, 30-second GIF, badges. No emoji headings. No inflated claims.
+- [x] **Seed script and demo account.** `apps/api/src/demo`: the scheduler
+      simulates a learner over six months, with lateness, a missed week, and
+      answers drawn from the model's own predicted recall. `pnpm db:seed` makes a
+      local account; `POST /auth/demo` makes a private one per visitor, swept
+      after a day. Every demo has at least 450 reviews, so the optimizer works in it.
+- [x] **Deploy.** API on Vercel with Neon, web on Vercel, separate databases for
+      local and production.
+- [x] **Uptime.** `.github/workflows/uptime.yml`: `/health` every 30 minutes,
+      `/ready` once a day.
+- [x] **Playwright E2E in CI, Lighthouse CI, size-limit.** See 05-ENGINEERING.
+- [x] **README** with the GIF, both diagrams, the live links and badges.
+      Web: recallify-five.vercel.app. API: recallify-api.vercel.app.
+- [x] Found on the way: a **sign-in rate limit** and **password reset**, the two
+      API gaps listed after phase 4. The faint text colour failed contrast at
+      3.1:1 and was darkened to 4.8:1.
+- [ ] Yatharth: `WEB_URL`, `BREVO_API_KEY` and `MAIL_FROM` in the API's Vercel
+      settings, once the Recallify mailbox exists. Until then a production
+      reset request answers 503 rather than pretending to send.
 
 **Ships: 🚀 web is live and verifiable.** The project is resume-ready here.
 Everything after this is upside.

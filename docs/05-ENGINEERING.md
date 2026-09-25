@@ -2,18 +2,27 @@
 
 ## Performance budget
 
-Numbers, not intentions. CI fails the build when these regress.
+Numbers, not intentions. The table says what was measured in phase 7 and
+which of them CI actually enforces; a budget nothing checks is a wish, and it
+is marked as one.
 
-| Metric | Budget | Enforced by |
-|---|---|---|
-| LCP (landing, mobile 4G) | < 1.5s | Lighthouse CI |
-| CLS | < 0.05 | Lighthouse CI |
-| INP | < 200ms | Lighthouse CI |
-| **Rating a card → next card visible** | **< 50ms** | manual + trace; fully local |
-| Initial JS (landing) | < 110 KB gz | `size-limit` |
-| Initial JS (app shell) | < 180 KB gz | `size-limit` |
-| API p95 (due queue) | < 120ms | logged |
-| Lighthouse Performance / A11y | >= 95 | Lighthouse CI |
+| Metric | Budget | Measured, phase 7 | Enforced by |
+|---|---|---|---|
+| **Rating a card, next card visible** | **< 50ms** | local, no request | design: fully local |
+| Lighthouse accessibility, best practices, SEO | >= 95 | 100 on all four public pages | Lighthouse CI, fails the job |
+| Lighthouse performance (simulated mobile) | >= 80 | 85 to 87 | Lighthouse CI, warns only |
+| CLS | < 0.1 | 0.000 | Lighthouse CI, fails the job |
+| Script transferred (public pages) | < 400 KB | 250 to 326 KB | Lighthouse CI, fails the job |
+| FSRS engine, brotli | < 9 KB | 7.5 KB | `size-limit`, fails the build |
+| Web client JS, all chunks, brotli | < 500 KB | 429 KB | `size-limit`, fails the build |
+| LCP (simulated mobile 4G) | < 2.5s | about 4s | not enforced |
+
+Performance is a warning rather than a failure because a shared CI runner's
+timing is not a measurement of the site. LCP is the honest gap: the landing
+headline animates in word by word, and Lighthouse counts the paint as late.
+The original targets of 1.5s LCP and 95 performance were written before any
+measurement existed and were not met; they stay out of the table rather than
+being claimed.
 
 The 50ms number is the one that matters. Rating a card must never wait on the
 network — `packages/fsrs` computes the next state locally, the UI advances
@@ -96,7 +105,7 @@ queries that match how the web app already reads data.
 | API unit | Vitest | ~70% | services, guards |
 | API integration | Vitest + Supertest + Postgres service container | auth + reviews fully | real DB, real HTTP |
 | Web components | Testing Library | key flows | review session, forms |
-| E2E | Playwright | 3 flows | see below |
+| E2E | Playwright | 5 files, desktop and phone | see below |
 
 Coverage is enforced only where it means something: the algorithm and the auth
 flow. Everywhere else, chasing a percentage produces tests that assert nothing.
@@ -137,26 +146,40 @@ is the correct posture — see the interview framing in `08-ROADMAP.md`.
 
 ### E2E flows (Playwright, in CI)
 
-1. register → create deck → add card → review it → due date changes
-2. demo login → stats page → curve renders with data
-3. AI generate → cards validated and persisted → appear in deck
+`apps/e2e`, run against the production builds of both apps on a Postgres
+service container, because the service worker only exists in a production
+build.
+
+1. Every public page renders, fits a phone screen and throws nothing; every
+   internal link on the front page resolves; the only outbound link is the
+   maker's profile.
+2. Register, sign out, sign in; a wrong password; the password toggle; forgot
+   and reset password pages.
+3. Make a deck, add a card, review it, and see it counted by the server.
+4. Open the demo: history deep enough for the optimizer to be offered.
+5. Offline: the review screen reopens with no connection, an answer waits in
+   the outbox and is sent on reconnect, and signing out removes cached cards.
+
+AI generation is not in E2E: it would spend the live model quota on every
+push. It is covered by integration tests with a scripted provider.
 
 ## CI — GitHub Actions
 
 ```yaml
-on: [push, pull_request]
+on: push to main, and every pull request
 
-lint-and-type:   pnpm lint · pnpm typecheck        # zero warnings allowed
-test-unit:       pnpm test --coverage              # fsrs must stay at 100%
-test-integration: services: postgres:16            # real database
-build:           pnpm build (turbo cached)
-e2e:             playwright, on PRs to main
-size:            size-limit — fails on budget regression
-lighthouse:      LHCI against the preview deployment
+quality:      lint (zero warnings), typecheck, build, size-limit
+test:         package unit tests; fsrs must stay at 100% coverage
+integration:  API tests on a postgres:16 service container
+e2e:          Playwright on the production builds, postgres:16
+lighthouse:   public pages served by next start, assertions in lighthouserc.json
 ```
 
-Badges in the README: CI status, coverage, uptime. All three are free and all
-three are checked in the first 60 seconds by anyone evaluating the repo.
+`uptime.yml` runs on a schedule: the live API's `/health` every 30 minutes and
+`/ready` (which touches the database) once a day, so the check does not keep the
+Neon compute awake and spend the free tier's hours. A failure emails the owner.
+
+Badges in the README: CI status and uptime.
 
 v1 currently fails `npm run lint` with one error and six warnings and nobody
 caught it, because there was no CI. That is the whole argument for this section.

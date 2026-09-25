@@ -56,11 +56,22 @@ That history is why the honesty rules below are not negotiable.
   above the render layer for mobile to reuse. The API gained settings update,
   account deletion, `/stats/workload` and the scheduling config on the queue.
   **275 tests**, plus a 20-step browser flow run against the real stack.
-  Open: the offline review shell (service worker) and View Transitions.
-- Next: phase 7, deploy.
+  Closed in phase 7: the offline shell (`apps/web/public/sw.js`) and View
+  Transitions (decided against until React ships it stable).
+- Phase 7 done in code. Public marketing site (`app/(site)`), demo accounts
+  and `pnpm db:seed` (`apps/api/src/demo`), sign-in rate limit and password
+  reset (Brevo), Playwright E2E (`apps/e2e`), Lighthouse CI, size-limit, uptime
+  workflow, README with GIF. Web live at recallify-five.vercel.app, API at
+  recallify-api.vercel.app.
+- Next: phase 8, import and the Memory Report.
 
-Still missing from the API, found while auditing before phase 6: **password
-reset** (needs an email provider) and a **rate limit on login**.
+Rate limits live in Postgres (`rate_limit_hits`), never in memory: the API is
+serverless. The web BFF forwards the visitor's address as `x-client-ip`; it is
+a second limit beside a per-account one, never the only one, because a direct
+caller can set it.
+
+Never point Prisma's `--shadow-database-url` at the Neon dev or prod URL: it
+resets the shadow database, and did once to dev in phase 7.
 
 The roadmap gained three phases after a monetization review in September 2026:
 exam-day prediction (inside 8), live decks (8b), and charging (10, only once
