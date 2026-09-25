@@ -52,6 +52,7 @@ model User {
   cards         Card[]
   reviews       Review[]
   refreshTokens RefreshToken[]
+  passwordResets PasswordReset[]
   stats         UserStats?
   aiUsage       AiUsage[]
   aiReports     AiReport[]
@@ -77,6 +78,23 @@ model RefreshToken {
   @@index([userId, familyId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+// One-shot password reset links. The raw token goes in the email and only
+// its SHA-256 is kept, so a database read cannot be turned into a sign-in.
+// Using a link marks it used and revokes every refresh token the user has.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_resets")
 }
 
 model Deck {
