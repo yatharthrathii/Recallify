@@ -167,6 +167,20 @@ model AiReport {
   createdAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// A Memory Report as it was when it was made. The fit inside it is expensive
+// and the findings describe one moment's log, so it is stored and reread, and
+// an earlier one can be set beside a later one.
+model MemoryReport {
+  id          String   @id @default(cuid())
+  userId      String
+  reviewCount Int                          // the log's size then; 50 more allows a new one
+  data        Json                         // the whole report, shaped by contracts/report.ts
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
 ```
 
 ### v1 bugs this schema fixes, explicitly
@@ -260,10 +274,19 @@ GET    /stats/forecast?days=30&deckId=
 GET    /stats/curve?cardId=|deckId=   forgetting curve series
 GET    /stats/workload        reviews/day at every retention target, one response
 
-POST   /import/anki           phase 8
-POST   /import/csv            phase 8
-POST   /report                phase 8
-GET    /report/:id            phase 8
+GET    /stats/exam?date=&deckId=   cards still known on a date: expectation, range,
+                                   the ones most likely gone, the best single reviews today
+
+POST   /import                cards with their history, into a new or existing deck.
+                              Up to 500 cards and 5,000 reviews a request; each card's
+                              reviews are replayed through the scheduler. The file is
+                              read on the device by packages/import, never uploaded.
+                              409 when a review id is already stored (imported before).
+GET    /report                the latest Memory Report, and whether a new one is allowed
+POST   /report                make one: a fit from 400 reviews, the curve against the
+                              average, recall by hour and weekday, leeches, deck cost,
+                              all in sentences. Stored. One a day, or after 50 new reviews.
+GET    /report/:id            a stored report
 
 GET    /health                liveness  (also the uptime ping target)
 GET    /ready                 readiness — checks DB

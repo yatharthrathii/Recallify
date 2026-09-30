@@ -63,7 +63,13 @@ That history is why the honesty rules below are not negotiable.
   reset (Brevo), Playwright E2E (`apps/e2e`), Lighthouse CI, size-limit, uptime
   workflow, README with GIF. Web live at recallify-five.vercel.app, API at
   recallify-api.vercel.app.
-- Next: phase 8, import and the Memory Report.
+- Phase 8 done. `packages/import` reads `.apkg` (both collection formats)
+  and CSV in the browser; `POST /import` replays each card's history through
+  the scheduler; `POST /report` makes the Memory Report (the fit in words,
+  recall by hour and weekday, leeches, deck cost), stored; `GET /stats/exam`
+  projects every card to a date. Web: `/import`, `/stats/report`, the exam
+  section on Stats. 56 reader tests at 100%, 12 API tests, one E2E flow.
+- Next: phase 8b, live decks.
 
 Rate limits live in Postgres (`rate_limit_hits`), never in memory: the API is
 serverless. The web BFF forwards the visitor's address as `x-client-ip`; it is
@@ -84,6 +90,44 @@ Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
 brings an existing Anki user in — without it they would have to abandon years of
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
+
+### Notes carried out of phase 8
+
+- **The file is read on the device.** A `.apkg` is mostly media, which is not
+  imported; the cards and their log are small. Reading it in the browser
+  means no upload limit, an instant preview, and an API that knows nothing
+  about the format. `sql.js` is loaded by a script tag from
+  `public/vendor` (copied there by `next.config.ts` when it loads, gitignored),
+  not imported: its loader is written for Node, workers and browsers at once
+  and a bundler tries to satisfy every branch. The copy lives in the config
+  rather than a `prebuild` hook because a host running `next build` directly
+  never runs lifecycle scripts.
+- **Replay, do not translate.** The source's scheduling state is ignored;
+  its reviews are replayed through this scheduler, so an imported card's
+  stability is one this engine computed. Exact where a translation would be
+  a guess, and it keeps `Review` the only source of state.
+- **Review ids come from the source's ids** (`reviewIdFor`), so importing
+  the same file twice collides on the primary key and is refused with 409.
+  The import page reads that as "already imported" and moves on to the next
+  deck.
+- Import writes card and review rows directly, like the demo seed: a whole
+  history and the state it produces have to land in one transaction. The
+  deck goes through `DecksService.create(…, tx)` and the stats through
+  `StatsService.absorbHistory`, which also recomputes the streak from the
+  whole log, since imported reviews sit anywhere in the past. Imported
+  reviews earn XP like lived ones, so the stats page reads the same either way.
+- Express parses bodies to 100 kB by default. `configureApp` raises it to
+  4 MB; an import request is up to 500 cards with histories.
+- **Prisma binds a JS number in `$queryRaw` as bigint.**
+  `make_interval(mins => $1)` failed with "function does not exist"; the
+  parameter needs `::int`.
+- The report is stored (`memory_reports`), one a day or after 50 new
+  reviews, so "import, then read the report" works at once. Below 400
+  reviews it scores the defaults on the log instead of fitting, and says so.
+- The E2E fixture (`apps/e2e/fixtures/sample.apkg`) is generated from a spec
+  by `WRITE_FIXTURE=1 vitest run test/fixture.test.ts` in `packages/import`,
+  in the zstd and protobuf format, so the browser test takes the path a real
+  export takes.
 
 ### Notes carried out of phase 6
 

@@ -66,6 +66,7 @@ recallify/
 │   ├── contracts/           Zod schemas = single source of truth
 │   ├── api-client/          typed client built from contracts
 │   ├── core/                shared hooks: review session state machine
+│   ├── import/              reads .apkg and CSV exports into one shape, on the device
 │   ├── tokens/              design tokens as plain TS (web + RN both read)
 │   └── config/              eslint / tsconfig / prettier presets
 ├── infra/
@@ -180,12 +181,14 @@ apps/api/src/
 ├── auth/        register, login, refresh (rotation + reuse detection), logout
 ├── users/       profile, settings (desired retention, daily limit)
 ├── decks/       CRUD, ownership guard
-├── cards/       CRUD, bulk create, CSV import
+├── cards/       CRUD, bulk create
 ├── reviews/     submit (idempotent), batch sync, history
 ├── scheduler/   wraps packages/fsrs — due queue, forecast, "why this card"
 ├── optimizer/   parameter training + backtest
+├── import/      cards with their history, replayed through the scheduler
+├── report/      the Memory Report: the fit in words, plus the log's own patterns
 ├── ai/          generation, rate limit, per-user cost cap
-├── stats/       xp, streak, level, heatmap  (server-side — fixes the v1 bug)
+├── stats/       xp, streak, level, heatmap, exam-day forecast  (server-side)
 └── common/      guards, interceptors, filters, request-id, logger
 ```
 

@@ -14,7 +14,7 @@ is marked as one.
 | CLS | < 0.1 | 0.000 | Lighthouse CI, fails the job |
 | Script transferred (public pages) | < 400 KB | 250 to 326 KB | Lighthouse CI, fails the job |
 | FSRS engine, brotli | < 9 KB | 7.5 KB | `size-limit`, fails the build |
-| Web client JS, all chunks, brotli | < 500 KB | 429 KB | `size-limit`, fails the build |
+| Web client JS, all chunks, brotli | < 500 KB | 429 KB, 468 KB after phase 8 | `size-limit`, fails the build |
 | LCP (simulated mobile 4G) | < 2.5s | about 4s | not enforced |
 
 Performance is a warning rather than a failure because a shared CI runner's
@@ -102,10 +102,11 @@ queries that match how the web app already reads data.
 |---|---|---|---|
 | `packages/fsrs` | Vitest + fast-check | **100%** | the algorithm |
 | `packages/optimizer` | Vitest | **100%** | convergence, loss decreases |
+| `packages/import` | Vitest | **100%** | both collection formats, template rendering, CSV dialects, every skip reason |
 | API unit | Vitest | ~70% | services, guards |
 | API integration | Vitest + Supertest + Postgres service container | auth + reviews fully | real DB, real HTTP |
 | Web components | Testing Library | key flows | review session, forms |
-| E2E | Playwright | 5 files, desktop and phone | see below |
+| E2E | Playwright | 6 files, desktop and phone | see below |
 
 Coverage is enforced only where it means something: the algorithm and the auth
 flow. Everywhere else, chasing a percentage produces tests that assert nothing.
@@ -159,6 +160,11 @@ build.
 4. Open the demo: history deep enough for the optimizer to be offered.
 5. Offline: the review screen reopens with no connection, an answer waits in
    the outbox and is sent on reconnect, and signing out removes cached cards.
+6. Import a CSV, then a deck export with six months of history, read in the
+   browser from the zstd-compressed collection; the reviews are counted on the
+   stats page, the exam forecast has cards to project, a Memory Report with a
+   fit is made and survives a reload, and importing the same file again is
+   refused deck by deck.
 
 AI generation is not in E2E: it would spend the live model quota on every
 push. It is covered by integration tests with a scripted provider.
