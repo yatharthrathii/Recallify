@@ -68,6 +68,12 @@ export function CommandPalette({ open, onOpenChange, onSignOut }: Props) {
           <Command.Item className={item} onSelect={() => go('/stats')}>
             Stats
           </Command.Item>
+          <Command.Item className={item} onSelect={() => go('/stats/report')}>
+            Memory Report
+          </Command.Item>
+          <Command.Item className={item} onSelect={() => go('/import')}>
+            Import cards
+          </Command.Item>
           <Command.Item className={item} onSelect={() => go('/settings')}>
             Settings
           </Command.Item>

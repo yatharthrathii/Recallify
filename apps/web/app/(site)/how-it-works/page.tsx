@@ -44,6 +44,10 @@ const FAQ = [
     a: 'No. Cards can be typed in, and most people will. Drafting from a topic or your own notes is there for the first fifty cards of a new subject, and every draft is reviewed by you before it is saved.',
   },
   {
+    q: 'Can I bring decks from another app?',
+    a: 'Yes, with their history. A deck export or a CSV is read on your device, and every answer you ever gave a card comes with it, replayed through this scheduler so the card picks up where it left off. Images and audio stay behind, and the preview says exactly what it could not carry across.',
+  },
+  {
     q: 'What if my connection drops mid session?',
     a: 'Keep going. Answers are held on your device and sent when the connection returns, and each one carries an id made locally so a retry cannot count it twice.',
   },

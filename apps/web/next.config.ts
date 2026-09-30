@@ -1,4 +1,27 @@
+import { copyFileSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import type { NextConfig } from 'next';
+
+/**
+ * The SQLite engine the import page loads, copied into public/ so the browser
+ * fetches it as two static files. Its loader is written for Node, workers and
+ * browsers at once, and a bundler that follows every branch of it ships
+ * polyfills for the ones that do not apply; a script tag sidesteps that.
+ *
+ * Done here, when the config loads, rather than in a package.json `prebuild`
+ * hook: a host that runs `next build` directly never runs npm lifecycle
+ * scripts, and the copy would silently be missing from production. The copy
+ * is gitignored.
+ */
+function copySqlJs(): void {
+  const dist = join(__dirname, 'node_modules', 'sql.js', 'dist');
+  const out = join(__dirname, 'public', 'vendor', 'sqljs');
+  mkdirSync(out, { recursive: true });
+  for (const file of ['sql-wasm.js', 'sql-wasm.wasm']) {
+    copyFileSync(join(dist, file), join(out, file));
+  }
+}
+copySqlJs();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -14,6 +37,7 @@ const nextConfig: NextConfig = {
     '@recallify/core',
     '@recallify/fsrs',
     '@recallify/contracts',
+    '@recallify/import',
   ],
   // Stable and top-level in Next 16 (it left `experimental` in this release).
   // Auto-memoises components, which keeps useMemo noise out of the review hot

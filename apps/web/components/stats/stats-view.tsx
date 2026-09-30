@@ -9,15 +9,18 @@ import {
   useMe,
   useOptimizerStatus,
   useOverview,
+  useReportStatus,
   useRunOptimizer,
 } from '@recallify/core/react';
+import { ArrowRight } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { ForecastBars } from '@/components/charts/forecast-bars';
 import { Heatmap } from '@/components/charts/heatmap';
 import { CountUp, FillBar } from '@/components/motion';
 import { PageShell, Section } from '@/components/shell/app-shell';
-import { Button } from '@/components/ui/button';
+import { ExamDay } from '@/components/stats/exam-day';
+import { Button, LinkButton } from '@/components/ui/button';
 import {
   ErrorState,
   Skeleton,
@@ -133,8 +136,33 @@ export function StatsView() {
         )}
       </Section>
 
+      <ExamDay />
+
       <MemoryModel />
+
+      <ReportTeaser />
     </PageShell>
+  );
+}
+
+/** The report lives on its own page; this says whether one exists yet. */
+function ReportTeaser() {
+  const status = useReportStatus();
+  const latest = status.data?.latest ?? null;
+  return (
+    <Section title="Memory Report" className="mt-10">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <p className="max-w-[60ch] text-ui text-ink-muted">
+          {latest
+            ? `Your latest report was made ${formatDate(latest.createdAt)} from ${formatCount(latest.reviewCount)} reviews: ${latest.statements[0] ?? ''}`
+            : 'The fit above, in sentences, beside what your log shows on its own: when you remember best, which cards keep failing, and what each deck returns for its reviews.'}
+        </p>
+        <LinkButton href="/stats/report" variant={latest ? 'secondary' : 'primary'} className="shrink-0">
+          {latest ? 'Open the report' : 'Make my report'}
+          <ArrowRight className="size-4" />
+        </LinkButton>
+      </div>
+    </Section>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import { formatCount, formatDate } from '@recallify/core';
 import { useDecks } from '@recallify/core/react';
-import { Plus } from 'lucide-react';
+import { Plus, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -34,10 +34,16 @@ export function DecksView() {
           : undefined
       }
       actions={
-        <Button variant="primary" onClick={() => setCreating(true)}>
-          <Plus className="size-4" />
-          New deck
-        </Button>
+        <>
+          <LinkButton href="/import">
+            <Upload className="size-4" />
+            Import
+          </LinkButton>
+          <Button variant="primary" onClick={() => setCreating(true)}>
+            <Plus className="size-4" />
+            New deck
+          </Button>
+        </>
       }
     >
       {decks.isLoading ? (
@@ -51,11 +57,14 @@ export function DecksView() {
       ) : items.length === 0 ? (
         <EmptyState
           title={showArchived ? 'No decks at all' : 'No decks yet'}
-          body="A deck is a set of cards on one subject. Each card gets its own forgetting curve from the first review onwards."
+          body="A deck is a set of cards on one subject. Each card gets its own forgetting curve from the first review onwards. Already have decks elsewhere? Bring them in with their history."
           action={
-            <Button variant="primary" onClick={() => setCreating(true)}>
-              Create your first deck
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="primary" onClick={() => setCreating(true)}>
+                Create your first deck
+              </Button>
+              <LinkButton href="/import">Import a file</LinkButton>
+            </div>
           }
         />
       ) : (

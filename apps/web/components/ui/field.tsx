@@ -146,6 +146,32 @@ export function TextArea({
   );
 }
 
+export function SelectField({
+  label,
+  hint,
+  error,
+  aside,
+  className,
+  children,
+  ...rest
+}: Shared & ComponentProps<'select'>) {
+  return (
+    <FieldShell label={label} hint={hint} error={error} aside={aside}>
+      {({ id, describedBy, invalid }) => (
+        <select
+          id={id}
+          aria-describedby={describedBy}
+          aria-invalid={invalid || undefined}
+          className={cn(control, 'h-10 appearance-none pr-8', className)}
+          {...rest}
+        >
+          {children}
+        </select>
+      )}
+    </FieldShell>
+  );
+}
+
 /** First message for a field from an ApiError's fieldErrors. */
 export function fieldError(
   errors: Record<string, string[]> | undefined,

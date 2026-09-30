@@ -62,7 +62,7 @@ const FOR = [
 const LIMITS = [
   'No streak guilt. Recallify does not send notifications to make you feel bad about a missed day.',
   'AI drafts are drafts. A language model writes them, and you approve each card before it is saved.',
-  'Importing decks from other apps is planned, not built. Today you add cards by hand or generate drafts.',
+  'Bringing decks in from another app keeps the text of every card and its whole review history. Images and audio stay behind.',
   'It runs in the browser. The Android app is in development, and nothing on this page depends on it.',
 ];
 
