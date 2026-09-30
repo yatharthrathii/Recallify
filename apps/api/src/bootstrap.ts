@@ -1,4 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule, type OpenAPIObject } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
@@ -19,6 +20,11 @@ import type { Env } from './config/env';
 export function configureApp(app: INestApplication): void {
   const config = app.get(ConfigService<Env, true>);
   const isProd = config.get('NODE_ENV', { infer: true }) === 'production';
+
+  // Express parses bodies up to 100 kB by default. An import request carries
+  // up to five hundred cards with their histories and needs a few megabytes;
+  // the ceiling stays under the 4.5 MB a serverless request may be.
+  (app as NestExpressApplication).useBodyParser('json', { limit: '4mb' });
 
   app.use(helmet());
   // Refresh tokens travel as an httpOnly cookie on web, so the server has to

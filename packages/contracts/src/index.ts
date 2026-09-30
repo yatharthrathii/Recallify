@@ -6,4 +6,6 @@ export * from './review';
 export * from './ai';
 export * from './stats';
 export * from './optimizer';
+export * from './import';
+export * from './report';
 export * from './health';

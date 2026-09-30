@@ -1,5 +1,7 @@
 import {
   curveQuery,
+  examForecast,
+  examQuery,
   forecast,
   forecastQuery,
   forgettingCurve,
@@ -16,5 +18,7 @@ export class HeatmapDto extends createZodDto(heatmapResponse) {}
 export class ForecastQueryDto extends createZodDto(forecastQuery) {}
 export class ForecastDto extends createZodDto(forecast) {}
 export class CurveQueryDto extends createZodDto(curveQuery) {}
+export class ExamQueryDto extends createZodDto(examQuery) {}
+export class ExamForecastDto extends createZodDto(examForecast) {}
 export class ForgettingCurveDto extends createZodDto(forgettingCurve) {}
 export class WorkloadPreviewDto extends createZodDto(workloadPreview) {}

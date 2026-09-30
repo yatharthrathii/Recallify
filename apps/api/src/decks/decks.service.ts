@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { Deck as DeckRow } from '@prisma/client';
+import type { Deck as DeckRow, Prisma } from '@prisma/client';
 import type {
   CreateDeckRequest,
   Deck,
@@ -111,8 +111,16 @@ export class DecksService {
     if (!found) throw new NotFoundException('That deck does not exist, or is not yours.');
   }
 
-  async create(userId: string, input: CreateDeckRequest): Promise<Deck> {
-    const row = await this.prisma.deck.create({
+  /**
+   * `tx` lets the importer make the deck in the same transaction as the cards
+   * it is about to put in it, so a failed import leaves no empty deck behind.
+   */
+  async create(
+    userId: string,
+    input: CreateDeckRequest,
+    tx: Prisma.TransactionClient = this.prisma,
+  ): Promise<Deck> {
+    const row = await tx.deck.create({
       data: {
         userId,
         title: input.title,

@@ -2,6 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import type {
   CurveQuery,
+  ExamCard,
+  ExamForecast,
+  ExamQuery,
   Forecast,
   ForecastQuery,
   ForgettingCurve,
@@ -10,8 +13,10 @@ import type {
   StatsOverview,
   WorkloadPreview,
 } from '@recallify/contracts';
-import { elapsedDays, intervalFromRetention, retrievability } from '@recallify/fsrs';
+import { elapsedDays, intervalFromRetention, retrievability, schedule } from '@recallify/fsrs';
+import { ReportService } from '../report/report.service';
 import { addDays, dayKey, daysBetween, startOfDay } from '../common/dates';
+import { streaks } from './streaks';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService, type UserScheduling } from '../scheduling/fsrs-config.service';
 
@@ -43,6 +48,7 @@ export class StatsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scheduling: FsrsConfigService,
+    private readonly reports: ReportService,
   ) {}
 
   /**
@@ -113,6 +119,53 @@ export class StatsService {
         level: levelFromXp(xp),
         streak,
         longestStreak: Math.max(current.longestStreak, streak),
+        lastStudyDate,
+      },
+    });
+  }
+
+  /**
+   * Fold a block of history into the totals, after an import.
+   *
+   * XP is earned the same way as for a live review, so an imported log and a
+   * lived one look alike on the stats page. The streak is recomputed from the
+   * whole log rather than moved forward, because the reviews just added may
+   * sit anywhere in the past.
+   */
+  async absorbHistory(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    reviewsAdded: number,
+    now: Date,
+  ): Promise<void> {
+    const days = await tx.$queryRaw<{ day: Date }[]>`
+      SELECT DISTINCT date_trunc('day', "reviewedAt")::date AS day
+      FROM "reviews"
+      WHERE "userId" = ${userId}
+      ORDER BY 1
+    `;
+    const studyDays = days.map((r) => startOfDay(r.day));
+    const { current, longest } = streaks(studyDays, now);
+    const lastStudyDate = studyDays[studyDays.length - 1] ?? null;
+
+    const stats = await tx.userStats.findUnique({ where: { userId } });
+    const xp = (stats?.xp ?? 0) + reviewsAdded * XP_PER_REVIEW;
+
+    await tx.userStats.upsert({
+      where: { userId },
+      create: {
+        userId,
+        xp,
+        level: levelFromXp(xp),
+        streak: current,
+        longestStreak: longest,
+        lastStudyDate,
+      },
+      update: {
+        xp,
+        level: levelFromXp(xp),
+        streak: current,
+        longestStreak: Math.max(stats?.longestStreak ?? 0, longest),
         lastStudyDate,
       },
     });
@@ -258,6 +311,107 @@ export class StatsService {
     }
 
     return { cardsCounted: cards.length, current: config.desiredRetention, points };
+  }
+
+  /**
+   * What will still be known on a date.
+   *
+   * Each seen card's retrievability is projected to the exam date and summed.
+   * The sum of independent chances has a variance of p(1-p) each, so the range
+   * is two standard deviations either side; the calibration error from the
+   * latest report is quoted beside it, because the range only holds if the
+   * model is right about this person. Nothing is simulated: the reviews that
+   * will happen between now and then are not guessed at. Instead the cards a
+   * single Good answer today would lift the most are listed, computed by
+   * running the scheduler on each one.
+   */
+  async exam(userId: string, query: ExamQuery): Promise<ExamForecast> {
+    const now = new Date();
+    const examAt = new Date(`${query.date}T00:00:00Z`);
+    const daysAway = daysBetween(now, examAt);
+    if (daysAway < 0) throw new BadRequestException('The date has already passed.');
+
+    const [config, calibrationError, decks, cards] = await Promise.all([
+      this.scheduling.forUser(userId),
+      this.reports.latestCalibrationError(userId),
+      this.prisma.deck.findMany({ where: { userId }, select: { id: true, title: true } }),
+      this.prisma.card.findMany({
+        where: {
+          userId,
+          suspendedAt: null,
+          ...(query.deckId ? { deckId: query.deckId } : {}),
+        },
+        select: {
+          id: true,
+          deckId: true,
+          front: true,
+          state: true,
+          stability: true,
+          difficulty: true,
+          dueAt: true,
+          reps: true,
+          lapses: true,
+          lastReviewedAt: true,
+          learningStep: true,
+        },
+      }),
+    ]);
+    if (query.deckId && !decks.some((d) => d.id === query.deckId)) {
+      throw new NotFoundException('That deck does not exist, or is not yours.');
+    }
+    const titles = new Map(decks.map((d) => [d.id, d.title]));
+
+    const seen = cards.filter(
+      (c): c is typeof c & { lastReviewedAt: Date } =>
+        c.state !== 'NEW' && c.lastReviewedAt !== null,
+    );
+    const daysNowToExam = Math.max(0, (examAt.getTime() - now.getTime()) / 86_400_000);
+
+    let expected = 0;
+    let variance = 0;
+    const histogram = Array.from({ length: 10 }, () => 0);
+    const projected: (ExamCard & { gain: number })[] = [];
+
+    for (const card of seen) {
+      const elapsedAtExam = elapsedDays(card.lastReviewedAt, now) + daysNowToExam;
+      const r = retrievability(config.params, elapsedAtExam, card.stability);
+      expected += r;
+      variance += r * (1 - r);
+      histogram[Math.min(9, Math.floor(r * 10))]! += 1;
+
+      // One Good answer now, then the same wait.
+      const { card: after } = schedule(card, 3, now, config, 0.5);
+      const lifted = retrievability(config.params, daysNowToExam, after.stability);
+      projected.push({
+        cardId: card.id,
+        deckId: card.deckId,
+        deckTitle: titles.get(card.deckId) ?? '',
+        front: card.front,
+        retrievability: r,
+        gain: Math.max(0, lifted - r),
+      });
+    }
+
+    const sd = Math.sqrt(variance);
+    const atRisk = [...projected]
+      .sort((a, b) => a.retrievability - b.retrievability)
+      .slice(0, 20)
+      .map(({ gain: _gain, ...card }) => card);
+    const bestMoves = [...projected].sort((a, b) => b.gain - a.gain).slice(0, 10);
+
+    return {
+      date: query.date,
+      daysAway,
+      cardsCounted: seen.length,
+      newCards: cards.length - seen.length,
+      expectedRecalled: expected,
+      low: Math.max(0, expected - 2 * sd),
+      high: Math.min(seen.length, expected + 2 * sd),
+      calibrationError,
+      histogram,
+      atRisk,
+      bestMoves,
+    };
   }
 
   async curve(userId: string, query: CurveQuery): Promise<ForgettingCurve> {

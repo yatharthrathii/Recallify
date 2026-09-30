@@ -113,3 +113,57 @@ export const workloadPreview = z.object({
   points: z.array(workloadPoint),
 });
 export type WorkloadPreview = z.infer<typeof workloadPreview>;
+
+/**
+ * Exam day: what will still be known on a fixed date.
+ *
+ * Every card's retrievability is projected forward to the date and summed.
+ * The sum is an expectation, so it comes with a range, and the cards most
+ * likely to be gone are listed with the ones a single review today would
+ * lift the most. New cards have no curve and are counted separately: the
+ * model cannot say anything about a card it has never seen answered.
+ */
+export const examQuery = z.object({
+  date: z.string().date(),
+  deckId: cuid.optional(),
+});
+export type ExamQuery = z.infer<typeof examQuery>;
+
+export const examCard = z.object({
+  cardId: cuid,
+  deckId: cuid,
+  deckTitle: z.string(),
+  front: z.string(),
+  /** Predicted recall on the date, if nothing happens between now and then. */
+  retrievability: z.number().min(0).max(1),
+  /** How much one Good answer today would raise that. Present in `bestMoves` only. */
+  gain: z.number().min(0).optional(),
+});
+export type ExamCard = z.infer<typeof examCard>;
+
+export const examForecast = z.object({
+  date: z.string().date(),
+  daysAway: z.number().int().min(0),
+  /** Cards with a curve: reviewed at least once and not suspended. */
+  cardsCounted: z.number().int().min(0),
+  /** Never reviewed, so not counted. They will be known only if studied. */
+  newCards: z.number().int().min(0),
+  /** Sum of every counted card's predicted recall on the date. */
+  expectedRecalled: z.number().min(0),
+  /** Two standard deviations either side, if the model is right about this user. */
+  low: z.number().min(0),
+  high: z.number().min(0),
+  /**
+   * How far the model's predictions have been from what actually happened,
+   * from the latest Memory Report. Null when there is none yet. The honest
+   * width of the range above.
+   */
+  calibrationError: z.number().min(0).nullable(),
+  /** Counted cards by predicted recall on the date, in ten bands from 0 to 100%. */
+  histogram: z.array(z.number().int().min(0)).length(10),
+  /** The counted cards most likely to be forgotten by the date. */
+  atRisk: z.array(examCard),
+  /** The cards one Good answer today would move the total by the most. */
+  bestMoves: z.array(examCard),
+});
+export type ExamForecast = z.infer<typeof examForecast>;

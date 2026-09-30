@@ -12,6 +12,7 @@ import type {
   CreateDeckInput,
   DraftCard,
   GenerateInput,
+  ImportChunkInput,
 } from '../api/client';
 import { ApiError } from '../api/http';
 import { keys } from '../keys';
@@ -237,6 +238,60 @@ export function useCurve(target: { cardId?: string; deckId?: string }, enabled =
 export function useWorkload() {
   const api = useApi();
   return useQuery({ queryKey: keys.stats.workload, queryFn: api.stats.workload });
+}
+
+export function useExam(date: string | null, deckId?: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.stats.exam(date ?? '', deckId),
+    queryFn: () => api.stats.exam({ date: date as string, ...(deckId ? { deckId } : {}) }),
+    enabled: date !== null,
+  });
+}
+
+// ---------------------------------------------------------------- import
+
+/**
+ * One request of an import. The caller loops over chunks; each success
+ * changes the deck list, the stats and the queue, so all three refresh.
+ */
+export function useImportCards() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ImportChunkInput) => api.importCards(body),
+    onSuccess: () => {
+      refreshCards(qc);
+      void qc.invalidateQueries({ queryKey: keys.report.status });
+    },
+  });
+}
+
+// ---------------------------------------------------------------- report
+
+export function useReportStatus() {
+  const api = useApi();
+  return useQuery({ queryKey: keys.report.status, queryFn: api.report.status });
+}
+
+export function useReport(id: string) {
+  const api = useApi();
+  return useQuery({ queryKey: keys.report.detail(id), queryFn: () => api.report.get(id) });
+}
+
+/** Sends the visitor's UTC offset, so hour-of-day findings are in their own clock. */
+export function useCreateReport() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.report.create(-new Date().getTimezoneOffset()),
+    onSuccess: (report) => {
+      qc.setQueryData(keys.report.detail(report.id), report);
+      void qc.invalidateQueries({ queryKey: keys.report.all });
+      // The exam forecast quotes the latest report's calibration.
+      void qc.invalidateQueries({ queryKey: keys.stats.all });
+    },
+  });
 }
 
 // ---------------------------------------------------------------- ai

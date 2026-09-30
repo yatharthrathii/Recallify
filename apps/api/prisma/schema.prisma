@@ -56,6 +56,7 @@ model User {
   stats         UserStats?
   aiUsage       AiUsage[]
   aiReports     AiReport[]
+  reports       MemoryReport[]
 
   @@map("users")
 }
@@ -265,4 +266,21 @@ model RateLimitHit {
   @@index([key, createdAt])
   @@index([createdAt])
   @@map("rate_limit_hits")
+}
+
+// A Memory Report, kept as it was when it was made. The fit inside it is
+// expensive and the findings are a snapshot of one moment's log, so a report
+// is stored rather than recomputed on every visit, and an earlier one can be
+// set beside a later one.
+model MemoryReport {
+  id          String   @id @default(cuid())
+  userId      String
+  reviewCount Int
+  data        Json
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("memory_reports")
 }

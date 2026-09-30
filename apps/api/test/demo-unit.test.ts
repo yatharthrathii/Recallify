@@ -1,7 +1,8 @@
 import { MIN_REVIEWS } from '@recallify/optimizer';
 import { describe, expect, it } from 'vitest';
 import { DEMO_DECKS } from '../src/demo/content';
-import { simulate, streaks } from '../src/demo/simulate';
+import { simulate } from '../src/demo/simulate';
+import { streaks } from '../src/stats/streaks';
 
 const NOW = new Date('2026-09-25T09:00:00Z');
 

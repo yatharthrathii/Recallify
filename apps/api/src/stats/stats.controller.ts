@@ -1,9 +1,12 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ProblemDetailsDto } from '../common/problem.dto';
 import { ApiOk, ApiOwned } from '../common/api-responses';
 import { CurrentUser, type AuthenticatedUser } from '../common/current-user.decorator';
 import {
   CurveQueryDto,
+  ExamForecastDto,
+  ExamQueryDto,
   ForecastDto,
   ForecastQueryDto,
   ForgettingCurveDto,
@@ -62,6 +65,25 @@ export class StatsController {
   @ApiOk(WorkloadPreviewDto)
   workload(@CurrentUser() user: AuthenticatedUser): Promise<WorkloadPreviewDto> {
     return this.stats.workload(user.id);
+  }
+
+  @Get('exam')
+  @ApiOperation({
+    summary: 'What will still be known on a date',
+    description:
+      'Every reviewed card’s predicted recall on the date, summed, with ' +
+      'a range and the latest report’s calibration error beside it. Lists ' +
+      'the cards most likely to be gone and the ones a single Good answer ' +
+      'today would lift the most. New cards are counted but not predicted.',
+  })
+  @ApiOk(ExamForecastDto)
+  @ApiOwned()
+  @ApiBadRequestResponse({ description: 'A date in the past.', type: ProblemDetailsDto })
+  exam(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query() query: ExamQueryDto,
+  ): Promise<ExamForecastDto> {
+    return this.stats.exam(user.id, query);
   }
 
   @Get('curve')

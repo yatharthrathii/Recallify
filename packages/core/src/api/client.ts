@@ -6,21 +6,26 @@ import {
   currentUser,
   deck,
   deckStats,
+  examForecast,
   explanation,
   forecast,
   forgettingCurve,
   generateResult,
   heatmapResponse,
+  importResponse,
+  memoryReport,
   optimizerRunResponse,
   optimizerStatus,
   paginated,
   queueResponse,
+  reportStatus,
   reviewHistoryItem,
   reviewOutcome,
   statsOverview,
   workloadPreview,
   type AiReportRequest,
   type BatchReviewRequest,
+  type ImportRequest,
   type SubmitReviewRequest,
   type UpdateCardRequest,
   type UpdateDeckRequest,
@@ -50,6 +55,17 @@ export interface DraftCard {
   back: string;
   hint?: string | undefined;
 }
+
+/** One request of an import: the wire shape, with dates already ISO strings. */
+export type ImportChunkInput = Omit<ImportRequest, 'cards'> & {
+  cards: {
+    front: string;
+    back: string;
+    hint?: string;
+    suspended?: boolean;
+    reviews?: { id: string; rating: 1 | 2 | 3 | 4; reviewedAt: string; durationMs?: number }[];
+  }[];
+};
 
 export interface GenerateInput {
   deckId: string;
@@ -129,6 +145,18 @@ export function createApiClient(options: TransportOptions) {
       curve: (query: { cardId?: string; deckId?: string }) =>
         http.request('/stats/curve', { query, schema: forgettingCurve }),
       workload: () => http.request('/stats/workload', { schema: workloadPreview }),
+      exam: (query: { date: string; deckId?: string }) =>
+        http.request('/stats/exam', { query, schema: examForecast }),
+    },
+
+    importCards: (body: ImportChunkInput) =>
+      http.request('/import', { method: 'POST', body, schema: importResponse }),
+
+    report: {
+      status: () => http.request('/report', { schema: reportStatus }),
+      create: (tzOffsetMinutes: number) =>
+        http.request('/report', { method: 'POST', body: { tzOffsetMinutes }, schema: memoryReport }),
+      get: (id: string) => http.request(`/report/${id}`, { schema: memoryReport }),
     },
 
     ai: {

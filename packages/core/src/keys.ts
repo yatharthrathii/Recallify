@@ -31,6 +31,12 @@ export const keys = {
     forecast: (days: number, deckId?: string) => ['stats', 'forecast', { days, deckId }] as const,
     curve: (target: { cardId?: string; deckId?: string }) => ['stats', 'curve', target] as const,
     workload: ['stats', 'workload'] as const,
+    exam: (date: string, deckId?: string) => ['stats', 'exam', { date, deckId }] as const,
+  },
+  report: {
+    all: ['report'] as const,
+    status: ['report', 'status'] as const,
+    detail: (id: string) => ['report', 'detail', id] as const,
   },
   ai: { usage: ['ai', 'usage'] as const },
   optimizer: { status: ['optimizer', 'status'] as const },
