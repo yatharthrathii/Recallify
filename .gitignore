@@ -31,3 +31,6 @@ Thumbs.db
 next-env.d.ts
 
 .lighthouseci/
+
+# Copied from node_modules by apps/web/next.config.ts
+apps/web/public/vendor/
