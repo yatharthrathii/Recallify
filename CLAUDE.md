@@ -69,7 +69,12 @@ That history is why the honesty rules below are not negotiable.
   recall by hour and weekday, leeches, deck cost), stored; `GET /stats/exam`
   projects every card to a date. Web: `/import`, `/stats/report`, the exam
   section on Stats. 56 reader tests at 100%, 12 API tests, one E2E flow.
-- Next: phase 8b, live decks.
+- Phase 8b done. Live decks: `apps/api/src/library` publishes a deck in
+  place, makes a follower's copy whose cards carry `sourceCardId`, syncs text
+  only, and keeps a changelog written by a conditional insert on every card
+  write. Web: `/library`, `/library/:id`, the live strip on a deck page.
+  12 integration tests, one two-account E2E flow.
+- Next: phase 9, Android.
 
 Rate limits live in Postgres (`rate_limit_hits`), never in memory: the API is
 serverless. The web BFF forwards the visitor's address as `x-client-ip`; it is
@@ -90,6 +95,46 @@ Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
 brings an existing Anki user in — without it they would have to abandon years of
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
+
+### Notes carried out of phase 8b
+
+- **Sync writes text and reads no state.** `LibraryService.diff` reads ids
+  and stamps only; `sync` then fetches text for just the cards that need it,
+  so a 5,000-card deck is not pulled through memory on every page open, and
+  nothing about a follower's stability is ever selected. Matching is by
+  `sourceCardId`; matching by text would break the moment the author fixed a
+  typo.
+- **`Card.textUpdatedAt`, not `updatedAt`.** `updatedAt` moves on every
+  review, so comparing it would make an author who studies their own deck
+  overwrite every follower's own edits. `textUpdatedAt` moves only in
+  `CardsService.update`, and only when the text actually changed; an
+  unchanged save records nothing. `(deckId, sourceCardId)` is unique, and
+  additions use `skipDuplicates`, so two syncs racing add a card once.
+- **A removed card is suspended and detached.** It is the follower's own
+  from then on: un-suspending it does not get it re-suspended next sync, and
+  it can be deleted. A card that still follows the author's cannot be
+  deleted (409): the next sync would bring it straight back. The card
+  dialog hides Delete for those.
+- **Import review ids are per account.** `reviewIdFor(userId, id)` in
+  `common/ids.ts` hashes the account into the file's deterministic id, so
+  two people importing the same shared export never collide on the global
+  review primary key, while one person importing twice still gets 409. Card
+  ids for an import are made in Node (`newCardId`) so reviews can name them
+  before the INSERT, instead of trusting RETURNING order.
+- **The changelog costs nothing until publishing.** Cards report every write
+  through `recordCardChange`, a single `INSERT ... SELECT ... WHERE isPublic`,
+  so the cards module never asks whether a deck is published and an
+  unpublished deck pays one no-op statement. The row's id is a UUID from
+  Node, not a cuid, so `deckChange.id` is a plain string in the contract.
+- No foreign key from `Card.sourceCardId`: an author deleting a card is the
+  signal a sync uses to suspend the copy. `Deck.sourceDeckId` does have one,
+  with SetNull, so deleting the deck detaches copies rather than deleting them.
+- A follower's own edit survives until the author edits that card, at which
+  point the author's text wins. The deck is theirs to maintain; that is what
+  following means, and it is said on the page.
+- Publishing is refused for demo accounts (403, the AI precedent) because the
+  account is swept after a day and its followers would be left with a copy
+  that no longer syncs.
 
 ### Notes carried out of phase 8
 

@@ -37,6 +37,10 @@ private account with six months of history, deleted after a day.
   you forget against the average learner, when you remember best, which cards
   keep failing and what each deck returns for its reviews. The exam-day
   forecast projects every card to a date and shows the range beside the number.
+- **Live decks.** Publish a deck and keep improving it. Anyone who follows it
+  gets their own copy, scheduled by their own answers; your later edits reach
+  their cards as text only, and their progress is never reset. A changelog
+  says what changed and, if you wrote one, why.
 - **Keeps working offline.** Answers go to an outbox and are sent when the
   connection returns, each with an id made on the device, so a retry is never
   counted twice. A service worker lets the review screen open with no connection,
@@ -132,8 +136,8 @@ Every push runs five jobs in [CI](.github/workflows/ci.yml):
 |---|---|
 | lint, typecheck, build | Zero lint warnings allowed. Size budgets on the engine and the web bundle |
 | unit tests | About 260 tests over the packages. `packages/fsrs`, `optimizer` and `import` are held at 100% coverage |
-| integration tests | About 100 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets, import, the report |
-| end to end | Playwright on the production builds, desktop and phone: sign up to review to stats, demo, offline review, import to report |
+| integration tests | About 115 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets, import, the report, live decks |
+| end to end | Playwright on the production builds, desktop and phone: sign up to review to stats, demo, offline review, import to report, publish and follow |
 | lighthouse | Accessibility, best practices and SEO must stay at 95 or above on public pages |
 
 The FSRS implementation is checked against

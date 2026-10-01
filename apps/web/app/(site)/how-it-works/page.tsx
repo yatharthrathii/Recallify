@@ -48,6 +48,10 @@ const FAQ = [
     a: 'Yes, with their history. A deck export or a CSV is read on your device, and every answer you ever gave a card comes with it, replayed through this scheduler so the card picks up where it left off. Images and audio stay behind, and the preview says exactly what it could not carry across.',
   },
   {
+    q: 'Can I share a deck I keep improving?',
+    a: 'Yes. Publish it to the library and anyone can follow it. Each follower gets their own copy, scheduled by their own answers. When you fix a card, the new text reaches every copy; nobody’s progress is reset, and a card you remove is suspended in their copy rather than deleted. A changelog shows what changed and why.',
+  },
+  {
     q: 'What if my connection drops mid session?',
     a: 'Keep going. Answers are held on your device and sent when the connection returns, and each one carries an id made locally so a retry cannot count it twice.',
   },

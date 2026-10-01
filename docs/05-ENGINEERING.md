@@ -106,7 +106,7 @@ queries that match how the web app already reads data.
 | API unit | Vitest | ~70% | services, guards |
 | API integration | Vitest + Supertest + Postgres service container | auth + reviews fully | real DB, real HTTP |
 | Web components | Testing Library | key flows | review session, forms |
-| E2E | Playwright | 6 files, desktop and phone | see below |
+| E2E | Playwright | 7 files, desktop and phone | see below |
 
 Coverage is enforced only where it means something: the algorithm and the auth
 flow. Everywhere else, chasing a percentage produces tests that assert nothing.
@@ -165,6 +165,10 @@ build.
    stats page, the exam forecast has cards to project, a Memory Report with a
    fit is made and survives a reload, and importing the same file again is
    refused deck by deck.
+7. Live decks, two accounts in turn: the author publishes, the follower finds
+   it in the library and follows it, reviews a card; the author corrects that
+   card and leaves a note; the follower's copy takes the edit on arrival and
+   the card is still in learning.
 
 AI generation is not in E2E: it would spend the live model quota on every
 push. It is covered by integration tests with a scripted provider.

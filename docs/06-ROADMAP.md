@@ -331,7 +331,7 @@ export through the report.
 
 ---
 
-## Phase 8b — Live decks (2 weeks)
+## Phase 8b — Live decks (2 weeks) · done
 
 A deck other people subscribe to, which its author keeps improving — without
 anyone's review history being reset when a card is corrected.
@@ -345,18 +345,34 @@ it — so editing a card's text has never touched its schedule.
 
 What is new:
 
-- A published deck and a subscription to it
-- Card identity that survives an author's edit: a subscriber's copy points at
-  the source card, and a text change propagates while stability, difficulty
-  and the log stay with the subscriber
-- Additions and deletions from the author arrive as new cards and as
-  suspensions — never as deletions of a subscriber's history
-- A changelog per deck, so a subscriber can see what changed and why
+- [x] **Published in place.** A deck goes into the library as itself, no
+      copy on the author's side: `isPublic` and `publishedAt` on the deck.
+      Demo accounts cannot publish, since they vanish after a day.
+- [x] **A follower's copy is an ordinary deck** with `sourceDeckId`, and its
+      cards carry `sourceCardId`. Sync matches by that id, never by text,
+      writes only `front`, `back` and `hint`, and never reads the copy's
+      state or log. An author's addition arrives as a new card; a deletion
+      suspends the copy's card. A follower's own edit to a card stands until
+      the author next edits that card.
+- [x] **The changelog** is written by one conditional INSERT on every card
+      write, inside the write's own transaction, which stores nothing for a
+      deck that is not published, plus notes the author adds. A follower's
+      deck page shows what has changed since their last sync and takes it
+      on arrival.
+- [x] **Edits are text edits.** `Card.textUpdatedAt` moves only when the
+      text changes, so an author studying their own deck never overwrites a
+      follower's own edit. Two syncs racing add a card once.
+- [x] Unpublishing leaves every copy standing and stops the flow; deleting the
+      deck detaches them. Unfollowing detaches and keeps everything.
+- [x] Web: `/library`, `/library/:id`, the live strip on a deck page for
+      authors and followers, publish and follow flows. 12 integration tests,
+      one end-to-end flow with two accounts.
 
 Content is the harder half. A live deck is only worth subscribing to if
 someone keeps it good, and that is writing and maintenance, not engineering.
 
-**Ships:** the feature a paid tier would actually be built around.
+**Ships:** the feature a paid tier would actually be built around. Free for
+now: there is no billing until there are users (phase 10).
 
 ---
 

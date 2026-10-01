@@ -187,6 +187,7 @@ apps/api/src/
 ├── optimizer/   parameter training + backtest
 ├── import/      cards with their history, replayed through the scheduler
 ├── report/      the Memory Report: the fit in words, plus the log's own patterns
+├── library/     live decks: publish, follow, sync text to copies, the changelog
 ├── ai/          generation, rate limit, per-user cost cap
 ├── stats/       xp, streak, level, heatmap, exam-day forecast  (server-side)
 └── common/      guards, interceptors, filters, request-id, logger

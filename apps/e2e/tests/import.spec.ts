@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
-import { register, settled } from './helpers';
+import { deleteAccount, register, settled } from './helpers';
 
 const FIXTURES = join(__dirname, '..', 'fixtures');
 
@@ -83,4 +83,10 @@ test('import a CSV, then a deck export with history, and read the report', async
     timeout: 60_000,
   });
   await expect(page.getByText(/Imported 0 cards and 0 reviews into 0 decks\./)).toBeVisible();
+
+  // The fixture's review ids are the same on every run, and the id is the
+  // primary key across the whole table. Against a database shared between
+  // runs, leaving this account behind would make the next run's first import
+  // read as a repeat.
+  await deleteAccount(page);
 });

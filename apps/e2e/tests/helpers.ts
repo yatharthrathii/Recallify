@@ -31,3 +31,12 @@ export async function expectNoHorizontalScroll(page: Page): Promise<void> {
 export async function settled(page: Page): Promise<void> {
   await expect(page.locator('.skeleton')).toHaveCount(0, { timeout: 30_000 });
 }
+
+/**
+ * Removes the account the page is signed in as. The proxy accepts a request
+ * with no Origin header as same-origin, and page.request carries the cookies.
+ */
+export async function deleteAccount(page: Page): Promise<void> {
+  const res = await page.request.delete('/api/v1/auth/me', { data: { password: PASSWORD } });
+  expect(res.status(), 'account deleted').toBe(204);
+}
