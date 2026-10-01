@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { ApiCreated, ApiNoContent, ApiOk, ApiOwned } from '../common/api-responses';
+import { ApiConflict, ApiCreated, ApiNoContent, ApiOk, ApiOwned } from '../common/api-responses';
 import { CurrentUser, type AuthenticatedUser } from '../common/current-user.decorator';
 import { CardsService } from './cards.service';
 import {
@@ -95,9 +95,15 @@ export class CardsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a card and its review history' })
+  @ApiOperation({
+    summary: 'Delete a card and its review history',
+    description:
+      'A card in a followed deck cannot be deleted while the deck follows its ' +
+      'source; suspend it, or stop following first.',
+  })
   @ApiNoContent()
   @ApiOwned()
+  @ApiConflict('The card follows an author’s card.')
   remove(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string): Promise<void> {
     return this.cards.remove(user.id, id);
   }

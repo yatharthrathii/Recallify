@@ -12,6 +12,7 @@ import { validateEnv } from './config/env';
 import { DecksModule } from './decks/decks.module';
 import { HealthModule } from './health/health.module';
 import { ImportModule } from './import/import.module';
+import { LibraryModule } from './library/library.module';
 import { MailModule } from './mail/mail.module';
 import { OptimizerModule } from './optimizer/optimizer.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -48,6 +49,7 @@ import { StatsModule } from './stats/stats.module';
     StatsModule,
     OptimizerModule,
     ImportModule,
+    LibraryModule,
     ReportModule,
     AiModule,
     HealthModule,

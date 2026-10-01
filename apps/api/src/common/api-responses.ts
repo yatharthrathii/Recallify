@@ -1,5 +1,11 @@
 import { applyDecorators, type Type } from '@nestjs/common';
-import { ApiNotFoundResponse, ApiResponse, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiConflictResponse,
+  ApiNotFoundResponse,
+  ApiResponse,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { ProblemDetailsDto } from './problem.dto';
 
 /**
@@ -42,6 +48,15 @@ export function ApiNoContent(description?: string) {
  * There is no 403 anywhere in this API. Answering "that exists but is not
  * yours" would confirm the id, so not-yours and not-there are the same answer.
  */
+/** A request that names something the caller owns but that is not in the right state. */
+export function ApiBadRequest(description: string) {
+  return ApiBadRequestResponse({ description, type: ProblemDetailsDto });
+}
+
+export function ApiConflict(description: string) {
+  return ApiConflictResponse({ description, type: ProblemDetailsDto });
+}
+
 export function ApiOwned() {
   return ApiNotFoundResponse({
     description: 'No such record, or it belongs to someone else.',

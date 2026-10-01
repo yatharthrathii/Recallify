@@ -109,11 +109,49 @@ model Deck {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cards Card[]
+  // Live decks. An author publishes a deck; a subscriber gets a copy that
+  // points back at it. Card text flows from source to copy on sync, and
+  // nothing flows the other way: the copy's cards are the subscriber's own,
+  // with their own state and log, which an author's edit never touches.
+  publishedAt  DateTime?
+  sourceDeckId String?
+  syncedAt     DateTime?
 
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards   Card[]
+  // An author deleting the deck leaves every copy standing, detached.
+  source  Deck?        @relation("Subscriptions", fields: [sourceDeckId], references: [id], onDelete: SetNull)
+  copies  Deck[]       @relation("Subscriptions")
+  changes DeckChange[]
+
+  @@unique([userId, sourceDeckId])
   @@index([userId, archivedAt])
+  @@index([isPublic, publishedAt])
+  @@index([sourceDeckId]) // follower counts, and the SetNull on delete
   @@map("decks")
+}
+
+enum DeckChangeKind {
+  ADDED
+  EDITED
+  REMOVED
+  NOTE
+}
+
+// What an author did to a published deck, so a subscriber can see what
+// changed and, when the author wrote one, why. Append-only, like reviews.
+model DeckChange {
+  id        String         @id @default(cuid())
+  deckId    String
+  kind      DeckChangeKind
+  cardId    String?        // the source card, when the change is about one
+  summary   String
+  createdAt DateTime       @default(now())
+
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+
+  @@index([deckId, createdAt])
+  @@map("deck_changes")
 }
 
 enum CardState {
@@ -127,6 +165,7 @@ enum CardSource {
   MANUAL
   AI
   IMPORT
+  SUBSCRIPTION
 }
 
 model Card {
@@ -149,6 +188,19 @@ model Card {
   lastReviewedAt DateTime?
   suspendedAt    DateTime?
 
+  // When front, back or hint last changed. `updatedAt` moves on every review,
+  // so it cannot say whether the text did; this can, and it is what a sync
+  // compares so an author who merely studies never overwrites a follower's
+  // own edit.
+  textUpdatedAt DateTime @default(now())
+
+  // For a card in a subscribed copy: the author's card it mirrors, and that
+  // card's textUpdatedAt when the text was last taken from it. No foreign key
+  // on purpose: an author deleting a card is exactly the signal sync looks
+  // for. Unique per deck, so two syncs racing cannot copy a card twice.
+  sourceCardId    String?
+  sourceUpdatedAt DateTime?
+
   // Which rung of the learning ladder the card is on, while it is in LEARNING
   // or RELEARNING. Without it a learning card is ambiguous: "answered Again,
   // back to 1 minute" and "answered Good once, now at 10 minutes" would look
@@ -165,6 +217,7 @@ model Card {
   @@index([userId, dueAt]) // THE due-queue query
   @@index([deckId, dueAt])
   @@index([userId, state])
+  @@unique([deckId, sourceCardId])
   @@map("cards")
 }
 

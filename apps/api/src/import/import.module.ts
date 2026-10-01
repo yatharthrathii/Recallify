@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DecksModule } from '../decks/decks.module';
+import { LibraryModule } from '../library/library.module';
 import { StatsModule } from '../stats/stats.module';
 import { ImportController } from './import.controller';
 import { ImportService } from './import.service';
@@ -13,7 +14,7 @@ import { ImportService } from './import.service';
  * owners.
  */
 @Module({
-  imports: [DecksModule, StatsModule],
+  imports: [DecksModule, StatsModule, LibraryModule],
   controllers: [ImportController],
   providers: [ImportService],
 })

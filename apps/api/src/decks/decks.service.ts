@@ -9,15 +9,15 @@ import type {
   UpdateDeckRequest,
 } from '@recallify/contracts';
 import { deckColor } from '@recallify/contracts';
-import { elapsedDays, retrievability } from '@recallify/fsrs';
 import { addDays, dayKey, startOfDay } from '../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService } from '../scheduling/fsrs-config.service';
+import { meanRetrievability } from '../scheduling/recall';
 
 const FORECAST_DAYS = 30;
 
 /** Prisma stores the colour as text; narrow it back rather than casting. */
-function toColor(value: string): DeckColor {
+export function toColor(value: string): DeckColor {
   const parsed = deckColor.safeParse(value);
   return parsed.success ? parsed.data : 'amber';
 }
@@ -29,7 +29,12 @@ export class DecksService {
     private readonly scheduling: FsrsConfigService,
   ) {}
 
-  private toDeck(row: DeckRow, cardCount: number, dueCount: number): Deck {
+  private toDeck(
+    row: DeckRow,
+    cardCount: number,
+    dueCount: number,
+    subscriberCount = 0,
+  ): Deck {
     return {
       id: row.id,
       title: row.title,
@@ -39,6 +44,9 @@ export class DecksService {
       archivedAt: row.archivedAt,
       cardCount,
       dueCount,
+      publishedAt: row.publishedAt,
+      subscriberCount,
+      sourceDeckId: row.sourceDeckId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -68,6 +76,17 @@ export class DecksService {
     return new Map(groups.map((g) => [g.deckId, g._count._all]));
   }
 
+  /** How many copies each published deck has, in one query. Zero for the rest. */
+  private async subscriberCounts(deckIds: string[]): Promise<Map<string, number>> {
+    if (deckIds.length === 0) return new Map();
+    const groups = await this.prisma.deck.groupBy({
+      by: ['sourceDeckId'],
+      where: { sourceDeckId: { in: deckIds } },
+      _count: { _all: true },
+    });
+    return new Map(groups.map((g) => [g.sourceDeckId as string, g._count._all]));
+  }
+
   async list(
     userId: string,
     query: ListDecksQuery,
@@ -85,13 +104,16 @@ export class DecksService {
 
     const hasMore = rows.length > query.limit;
     const page = hasMore ? rows.slice(0, query.limit) : rows;
-    const due = await this.dueCounts(
-      userId,
-      page.map((d) => d.id),
-    );
+    const ids = page.map((d) => d.id);
+    const [due, subscribers] = await Promise.all([
+      this.dueCounts(userId, ids),
+      this.subscriberCounts(page.filter((d) => d.isPublic).map((d) => d.id)),
+    ]);
 
     return {
-      items: page.map((d) => this.toDeck(d, d._count.cards, due.get(d.id) ?? 0)),
+      items: page.map((d) =>
+        this.toDeck(d, d._count.cards, due.get(d.id) ?? 0, subscribers.get(d.id) ?? 0),
+      ),
       nextCursor: hasMore ? (page[page.length - 1]?.id ?? null) : null,
     };
   }
@@ -138,10 +160,18 @@ export class DecksService {
     });
     if (!row) throw new NotFoundException('That deck does not exist, or is not yours.');
 
-    const due = await this.dueCounts(userId, [id]);
-    return this.toDeck(row, row._count.cards, due.get(id) ?? 0);
+    const [due, subscribers] = await Promise.all([
+      this.dueCounts(userId, [id]),
+      this.subscriberCounts(row.isPublic ? [id] : []),
+    ]);
+    return this.toDeck(row, row._count.cards, due.get(id) ?? 0, subscribers.get(id) ?? 0);
   }
 
+  /**
+   * Archiving also takes a deck out of the library: a deck its author has
+   * put away should not be found, followed or synced from. Restoring does not
+   * republish; that is the author's call to make again.
+   */
   async update(userId: string, id: string, input: UpdateDeckRequest): Promise<Deck> {
     const { archived, ...fields } = input;
 
@@ -155,6 +185,7 @@ export class DecksService {
         ...(fields.description !== undefined ? { description: fields.description } : {}),
         ...(fields.color !== undefined ? { color: fields.color } : {}),
         ...(archived !== undefined ? { archivedAt: archived ? new Date() : null } : {}),
+        ...(archived ? { isPublic: false, publishedAt: null } : {}),
       },
     });
 
@@ -170,7 +201,15 @@ export class DecksService {
    * the one that actually removes it.
    */
   async remove(userId: string, id: string): Promise<void> {
-    await this.prisma.deck.delete({ where: { id, userId } });
+    await this.prisma.$transaction([
+      // Copies of a published deck are detached, not deleted: the foreign key
+      // clears their sourceDeckId, and this clears what their cards pointed at.
+      this.prisma.card.updateMany({
+        where: { deck: { sourceDeckId: id }, sourceCardId: { not: null } },
+        data: { sourceCardId: null, sourceUpdatedAt: null },
+      }),
+      this.prisma.deck.delete({ where: { id, userId } }),
+    ]);
   }
 
   async stats(userId: string, deckId: string): Promise<DeckStats> {
@@ -196,7 +235,6 @@ export class DecksService {
     const dueByDay = new Map<string, number>();
     let dueNow = 0;
     let seenCards = 0;
-    let retrievabilitySum = 0;
     let stabilitySum = 0;
 
     for (const card of cards) {
@@ -210,18 +248,13 @@ export class DecksService {
       const key = dayKey(bucket);
       dueByDay.set(key, (dueByDay.get(key) ?? 0) + 1);
 
-      // A NEW card has no memory to measure, so averaging it in as either 0 or
-      // 1 would be a made-up number. It is left out of both means instead.
+      // A NEW card has no memory to measure; it is left out of the mean.
       if (card.state !== 'NEW' && card.lastReviewedAt) {
         seenCards += 1;
         stabilitySum += card.stability;
-        retrievabilitySum += retrievability(
-          config.params,
-          elapsedDays(card.lastReviewedAt, now),
-          card.stability,
-        );
       }
     }
+    const seen = cards.filter((c) => c.state !== 'NEW');
 
     const forecast = Array.from({ length: FORECAST_DAYS }, (_, i) => {
       const date = dayKey(addDays(today, i));
@@ -236,7 +269,7 @@ export class DecksService {
       review: counts.REVIEW,
       relearning: counts.RELEARNING,
       dueNow,
-      averageRetrievability: seenCards > 0 ? retrievabilitySum / seenCards : 0,
+      averageRetrievability: meanRetrievability(config.params, seen, now) ?? 0,
       averageStabilityDays: seenCards > 0 ? stabilitySum / seenCards : 0,
       forecast,
     };
