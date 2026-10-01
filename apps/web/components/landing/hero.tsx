@@ -65,7 +65,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             </p>
             {/* One button. Signing in lives in the header, where someone who
                 already has an account will look for it. */}
-            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center">
               <LinkButton
                 href={signedIn ? '/today' : '/register'}
                 variant="primary"

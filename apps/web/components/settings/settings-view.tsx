@@ -20,7 +20,7 @@ import { Segmented, Slider } from '@/components/ui/controls';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { PasswordField, TextField } from '@/components/ui/field';
 import { ErrorState, Skeleton, messageOf } from '@/components/ui/misc';
-import { logout } from '@/lib/auth';
+import { deviceTimezone, logout } from '@/lib/auth';
 import { applyTheme, readTheme, type ThemeChoice } from '@/lib/theme';
 
 export function SettingsView() {
@@ -39,6 +39,7 @@ export function SettingsView() {
         <div className="flex flex-col gap-10">
           <Profile user={me.data} />
           <Scheduling user={me.data} />
+          <Days user={me.data} />
           <Appearance />
           <AiAllowance />
           <Account user={me.data} />
@@ -247,6 +248,64 @@ function Scheduling({ user }: { user: CurrentUser }) {
           </Button>
         </div>
       </form>
+    </Section>
+  );
+}
+
+/** `Asia/Kolkata` reads as `Kolkata, Asia`. */
+function zoneLabel(zone: string): string {
+  const parts = zone.split('/');
+  if (parts.length < 2) return zone;
+  const city = parts.slice(1).join(', ').replace(/_/g, ' ');
+  return `${city}, ${parts[0]}`;
+}
+
+/**
+ * Which calendar the streak, the heatmap and the forecast follow. Set from
+ * the device at sign-up; shown here so a person who moved can move it, and
+ * so a person who travels can see it has not moved on its own.
+ */
+function Days({ user }: { user: CurrentUser }) {
+  const update = useUpdateSettings();
+  // Read after mount: the server does not know this device's zone.
+  const [here, setHere] = useState<string | undefined>();
+  useEffect(() => setHere(deviceTimezone()), []);
+
+  const zone = user.timezone ?? 'UTC';
+  const differs = here !== undefined && here !== zone;
+
+  return (
+    <Section title="Days">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-ui text-ink-muted">
+          Your day starts at midnight in{' '}
+          <span className="text-ink">{zoneLabel(zone)}</span>. The streak, the heatmap
+          and the forecast count days there.
+        </p>
+        {differs ? (
+          <Button
+            className="shrink-0"
+            loading={update.isPending}
+            onClick={() =>
+              update.mutate(
+                { timezone: here },
+                {
+                  onSuccess: () => toast.success(`Days now follow ${zoneLabel(here)}.`),
+                  onError: (error) => toast.error(messageOf(error)),
+                },
+              )
+            }
+          >
+            Use {zoneLabel(here)}
+          </Button>
+        ) : null}
+      </div>
+      {differs ? (
+        <p className="mt-2 text-caption text-ink-muted">
+          This device is in {zoneLabel(here)}. Your days stay where they are unless you
+          move them, so a trip does not shift the heatmap.
+        </p>
+      ) : null}
     </Section>
   );
 }

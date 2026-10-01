@@ -73,10 +73,24 @@ function AuthorPanel({ deck }: { deck: Deck }) {
       ) : changes.isError ? (
         <ErrorState error={changes.error} onRetry={() => void changes.refetch()} />
       ) : (
-        <Changelog
-          changes={changes.data?.items ?? []}
-          empty="No changes since publishing. They appear here as you make them."
-        />
+        <>
+          <Changelog
+            changes={changes.data?.pages.flatMap((page) => page.items) ?? []}
+            empty="No changes since publishing. They appear here as you make them."
+          />
+          {changes.hasNextPage ? (
+            <div className="mt-3">
+              <Button
+                size="sm"
+                variant="ghost"
+                loading={changes.isFetchingNextPage}
+                onClick={() => void changes.fetchNextPage()}
+              >
+                Show older
+              </Button>
+            </div>
+          ) : null}
+        </>
       )}
 
       <Dialog

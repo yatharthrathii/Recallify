@@ -24,6 +24,9 @@ test('make a deck, add a card, review it, see it counted', async ({ page }) => {
   await card.getByLabel('Front').fill('Capital of Japan?');
   await card.getByLabel('Back').fill('Tokyo');
   await card.getByRole('button', { name: 'Save and close' }).click();
+  // The dialog closes only once the server has the card. The text alone is
+  // not proof: React mirrors a textarea's value into its text content.
+  await expect(card).toBeHidden();
   await expect(page.getByText('Capital of Japan?')).toBeVisible();
   await expectNoHorizontalScroll(page);
 
