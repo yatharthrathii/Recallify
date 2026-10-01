@@ -4,6 +4,7 @@ import { useMe, useOverview } from '@recallify/core/react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
+  BookOpen,
   CalendarDays,
   ChevronsUpDown,
   Layers,
@@ -37,9 +38,13 @@ import { Logo } from './logo';
 const NAV = [
   { href: '/today', label: 'Today', icon: CalendarDays },
   { href: '/decks', label: 'Decks', icon: Layers },
+  { href: '/library', label: 'Library', icon: BookOpen },
   { href: '/stats', label: 'Stats', icon: BarChart3 },
   { href: '/settings', label: 'Settings', icon: Settings },
 ] as const;
+
+/** The phone bar has room for four beside Review; the library is reached from Decks. */
+const TABS = NAV.filter((entry) => entry.href !== '/library');
 
 function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -231,7 +236,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <div className="mx-auto grid h-16 max-w-140 grid-cols-5 items-center">
-          {NAV.slice(0, 2).map((entry) => (
+          {TABS.slice(0, 2).map((entry) => (
             <TabLink
               key={entry.href}
               {...entry}
@@ -248,7 +253,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {due > 0 ? <span className="tabular opacity-70">{due}</span> : null}
             </Link>
           </div>
-          {NAV.slice(2).map((entry) => (
+          {TABS.slice(2).map((entry) => (
             <TabLink
               key={entry.href}
               {...entry}
@@ -316,8 +321,10 @@ export function PageShell({
         width === 'app' ? 'max-w-280' : 'max-w-190',
       )}
     >
-      <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
+      {/* The title keeps at least 36rem beside the actions; with less room
+          than that the actions drop below it rather than squeeze it. */}
+      <header className="mb-10 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div className="min-w-0 flex-1 basis-[36rem]">
           {eyebrow ? (
             <motion.div
               className="mb-2"
@@ -381,9 +388,9 @@ export function Section({
 }) {
   return (
     <Reveal as="section" className={cn('border-t border-line-strong pt-5', className)}>
-      <div className="mb-5 flex items-baseline justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="font-display text-h3 font-semibold text-ink">{title}</h2>
-        {aside ? <div className="text-caption text-ink-muted">{aside}</div> : null}
+        {aside ? <div className="min-w-0 text-caption text-ink-muted">{aside}</div> : null}
       </div>
       {children}
     </Reveal>

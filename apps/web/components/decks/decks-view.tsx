@@ -35,6 +35,9 @@ export function DecksView() {
       }
       actions={
         <>
+          <LinkButton href="/library" variant="ghost">
+            Library
+          </LinkButton>
           <LinkButton href="/import">
             <Upload className="size-4" />
             Import
@@ -94,6 +97,8 @@ export function DecksView() {
                       {deck.title}
                     </Link>
                     {deck.archivedAt ? <Badge>Archived</Badge> : null}
+                    {deck.isPublic ? <Badge tone="info">In the library</Badge> : null}
+                    {deck.sourceDeckId ? <Badge tone="info">Following</Badge> : null}
                   </div>
                   {deck.description ? (
                     <p className="mt-0.5 truncate pl-5.5 text-ui text-ink-muted">

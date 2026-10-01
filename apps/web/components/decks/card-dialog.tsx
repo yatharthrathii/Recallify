@@ -232,9 +232,12 @@ function EditCard({ card, onDone }: { card: Card; onDone: () => void }) {
             >
               {card.suspendedAt ? 'Unsuspend' : 'Suspend'}
             </Button>
-            <Button variant="danger" onClick={() => setConfirmDelete(true)}>
-              Delete
-            </Button>
+            {/* A followed card comes back on the next update, so it is suspended, not deleted. */}
+            {card.sourceCardId ? null : (
+              <Button variant="danger" onClick={() => setConfirmDelete(true)}>
+                Delete
+              </Button>
+            )}
           </div>
           <Button
             type="submit"

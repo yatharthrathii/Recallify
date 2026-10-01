@@ -1,5 +1,6 @@
 import type { UpdateCardRequest, UpdateDeckRequest, UpdateSettingsRequest } from '@recallify/contracts';
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -87,6 +88,9 @@ function refreshDecks(qc: QueryClient): void {
   void qc.invalidateQueries({ queryKey: keys.decks.all });
   void qc.invalidateQueries({ queryKey: keys.stats.all });
   void qc.invalidateQueries({ queryKey: keys.review.all });
+  // A rename, an archive or a card write changes what the library shows: a
+  // published deck's changelog, a copy's pending count, the list itself.
+  void qc.invalidateQueries({ queryKey: keys.library.all });
 }
 
 export function useCreateDeck() {
@@ -264,6 +268,98 @@ export function useImportCards() {
       refreshCards(qc);
       void qc.invalidateQueries({ queryKey: keys.report.status });
     },
+  });
+}
+
+// ---------------------------------------------------------------- library
+
+export function useLibrary(q?: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.list(q),
+    queryFn: () => api.library.list({ ...(q ? { q } : {}), limit: 50 }),
+    // The last list stays on screen while a new search loads, instead of
+    // skeletons flashing on every keystroke.
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useLibraryDeck(deckId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.detail(deckId),
+    queryFn: () => api.library.detail(deckId),
+  });
+}
+
+export function useDeckChanges(deckId: string, enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.changes(deckId),
+    queryFn: () => api.library.changes(deckId, { limit: 50 }),
+    enabled,
+  });
+}
+
+/** For a subscribed copy: what a sync would do, and the author's notes since. */
+export function useSubscription(deckId: string, enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.status(deckId),
+    queryFn: () => api.library.status(deckId),
+    enabled,
+  });
+}
+
+function refreshLibrary(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: keys.library.all });
+  refreshCards(qc);
+}
+
+export function usePublishDeck() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { deckId: string; publish: boolean }) =>
+      input.publish ? api.library.publish(input.deckId) : api.library.unpublish(input.deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+export function useAddDeckNote() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { deckId: string; text: string }) =>
+      api.library.note(input.deckId, input.text),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.library.all }),
+  });
+}
+
+export function useSubscribe() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deckId: string) => api.library.subscribe(deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+export function useSyncSubscription() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deckId: string) => api.library.sync(deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+export function useUnsubscribe() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deckId: string) => api.library.unsubscribe(deckId),
+    onSuccess: () => refreshLibrary(qc),
   });
 }
 

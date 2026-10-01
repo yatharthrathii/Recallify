@@ -65,6 +65,9 @@ export function CommandPalette({ open, onOpenChange, onSignOut }: Props) {
           <Command.Item className={item} onSelect={() => go('/decks')}>
             Decks
           </Command.Item>
+          <Command.Item className={item} onSelect={() => go('/library')}>
+            Library
+          </Command.Item>
           <Command.Item className={item} onSelect={() => go('/stats')}>
             Stats
           </Command.Item>

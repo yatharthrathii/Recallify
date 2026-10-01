@@ -33,6 +33,13 @@ export const keys = {
     workload: ['stats', 'workload'] as const,
     exam: (date: string, deckId?: string) => ['stats', 'exam', { date, deckId }] as const,
   },
+  library: {
+    all: ['library'] as const,
+    list: (q?: string) => ['library', 'list', { q }] as const,
+    detail: (deckId: string) => ['library', 'detail', deckId] as const,
+    changes: (deckId: string) => ['library', 'changes', deckId] as const,
+    status: (deckId: string) => ['library', 'status', deckId] as const,
+  },
   report: {
     all: ['report'] as const,
     status: ['report', 'status'] as const,

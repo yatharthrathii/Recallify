@@ -5,6 +5,8 @@ import {
   card,
   currentUser,
   deck,
+  deckChange,
+  deckChangesPage,
   deckStats,
   examForecast,
   explanation,
@@ -13,6 +15,8 @@ import {
   generateResult,
   heatmapResponse,
   importResponse,
+  libraryDeck,
+  libraryDeckDetail,
   memoryReport,
   optimizerRunResponse,
   optimizerStatus,
@@ -22,6 +26,8 @@ import {
   reviewHistoryItem,
   reviewOutcome,
   statsOverview,
+  subscriptionStatus,
+  syncResult,
   workloadPreview,
   type AiReportRequest,
   type BatchReviewRequest,
@@ -36,6 +42,7 @@ import { Transport, type TransportOptions } from './http';
 const deckPage = paginated(deck);
 const cardPage = paginated(card);
 const historyPage = paginated(reviewHistoryItem);
+const libraryPage = paginated(libraryDeck);
 
 export interface CreateDeckInput {
   title: string;
@@ -151,6 +158,28 @@ export function createApiClient(options: TransportOptions) {
 
     importCards: (body: ImportChunkInput) =>
       http.request('/import', { method: 'POST', body, schema: importResponse }),
+
+    library: {
+      list: (query: { q?: string; cursor?: string; limit?: number } = {}) =>
+        http.request('/library', { query, schema: libraryPage }),
+      detail: (deckId: string) => http.request(`/library/${deckId}`, { schema: libraryDeckDetail }),
+      changes: (deckId: string, query: { cursor?: string; limit?: number } = {}) =>
+        http.request(`/library/${deckId}/changes`, { query, schema: deckChangesPage }),
+      publish: (deckId: string) =>
+        http.request(`/library/${deckId}/publish`, { method: 'POST', schema: deck }),
+      unpublish: (deckId: string) =>
+        http.request(`/library/${deckId}/unpublish`, { method: 'POST', schema: deck }),
+      note: (deckId: string, text: string) =>
+        http.request(`/library/${deckId}/notes`, { method: 'POST', body: { text }, schema: deckChange }),
+      subscribe: (deckId: string) =>
+        http.request(`/library/${deckId}/subscribe`, { method: 'POST', schema: deck }),
+      status: (deckId: string) =>
+        http.request(`/library/subscriptions/${deckId}`, { schema: subscriptionStatus }),
+      sync: (deckId: string) =>
+        http.request(`/library/subscriptions/${deckId}/sync`, { method: 'POST', schema: syncResult }),
+      unsubscribe: (deckId: string) =>
+        http.request(`/library/subscriptions/${deckId}`, { method: 'DELETE', schema: deck }),
+    },
 
     report: {
       status: () => http.request('/report', { schema: reportStatus }),

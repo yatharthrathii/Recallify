@@ -15,6 +15,8 @@ import {
   useDeckStats,
   useDeleteDeck,
   useMe,
+  usePublishDeck,
+  useUnsubscribe,
   useUpdateDeck,
 } from '@recallify/core/react';
 import { DEFAULT_PARAMS, elapsedDays, retrievability } from '@recallify/fsrs';
@@ -25,6 +27,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { ForecastBars } from '@/components/charts/forecast-bars';
 import { ForgettingCurve, fitYMin } from '@/components/curve/forgetting-curve';
+import { LiveDeckPanel } from '@/components/library/live-deck-panel';
 import { CountUp } from '@/components/motion';
 import { PageShell, Section } from '@/components/shell/app-shell';
 import { Button, IconButton, LinkButton } from '@/components/ui/button';
@@ -76,6 +79,10 @@ export function DeckView({ deckId }: { deckId: string }) {
   const me = useMe();
   const update = useUpdateDeck(deckId);
   const remove = useDeleteDeck();
+  const publish = usePublishDeck();
+  const unsubscribe = useUnsubscribe();
+  const [confirmPublish, setConfirmPublish] = useState(false);
+  const [confirmUnfollow, setConfirmUnfollow] = useState(false);
 
   const [adding, setAdding] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -123,6 +130,8 @@ export function DeckView({ deckId }: { deckId: string }) {
             <DeckSwatch color={d.color} className="size-4" />
             <span className="min-w-0 break-words">{d.title}</span>
             {archived ? <Badge>Archived</Badge> : null}
+            {d.isPublic ? <Badge tone="info">In the library</Badge> : null}
+            {d.sourceDeckId ? <Badge tone="info">Following</Badge> : null}
           </span>
         ) : (
           <Skeleton className="h-9 w-64" />
@@ -155,6 +164,27 @@ export function DeckView({ deckId }: { deckId: string }) {
             </MenuTrigger>
             <MenuContent>
               <MenuItem onSelect={() => setEditingDeck(true)}>Edit details</MenuItem>
+              {!d ? null : d.sourceDeckId ? (
+                <MenuItem onSelect={() => setConfirmUnfollow(true)}>Stop following</MenuItem>
+              ) : d.isPublic ? (
+                <MenuItem
+                  disabled={publish.isPending}
+                  onSelect={() =>
+                    publish.mutate(
+                      { deckId, publish: false },
+                      {
+                        onSuccess: () =>
+                          toast.success('Out of the library. Followers keep their copies.'),
+                        onError: (error) => toast.error(messageOf(error)),
+                      },
+                    )
+                  }
+                >
+                  Take out of the library
+                </MenuItem>
+              ) : !archived && !me.data?.isDemo ? (
+                <MenuItem onSelect={() => setConfirmPublish(true)}>Publish to the library</MenuItem>
+              ) : null}
               <MenuItem
                 onSelect={() =>
                   update.mutate(
@@ -182,7 +212,10 @@ export function DeckView({ deckId }: { deckId: string }) {
         </>
       }
     >
-      <StatStrip className="mb-10 sm:grid-cols-3 lg:grid-cols-5">
+      {d ? <LiveDeckPanel deck={d} /> : null}
+
+      {/* Five tiles: at three columns the last one takes the rest of its row. */}
+      <StatStrip className="mb-10 sm:grid-cols-3 sm:[&>*:nth-child(5)]:col-span-2 lg:grid-cols-5 lg:[&>*:nth-child(5)]:col-span-1">
         <StatTile
           label="Cards"
           value={
@@ -382,6 +415,47 @@ export function DeckView({ deckId }: { deckId: string }) {
       {d ? (
         <DeckFormDialog open={editingDeck} onOpenChange={setEditingDeck} deck={d} />
       ) : null}
+
+      <ConfirmDialog
+        open={confirmPublish}
+        onOpenChange={setConfirmPublish}
+        title="Publish this deck?"
+        description="Anyone signed in can find it in the library and follow it. Followers get their own copy of every card, and your later edits reach them. You can take it out of the library at any time; followers keep what they have."
+        confirmLabel="Publish"
+        danger={false}
+        loading={publish.isPending}
+        onConfirm={() =>
+          publish.mutate(
+            { deckId, publish: true },
+            {
+              onSuccess: () => {
+                toast.success('Published. It is in the library now.');
+                setConfirmPublish(false);
+              },
+              onError: (error) => toast.error(messageOf(error)),
+            },
+          )
+        }
+      />
+
+      <ConfirmDialog
+        open={confirmUnfollow}
+        onOpenChange={setConfirmUnfollow}
+        title="Stop following this deck?"
+        description="The deck, every card and all of your progress stay exactly as they are; they just stop receiving the author's changes. Following again later makes a separate new copy."
+        confirmLabel="Stop following"
+        danger={false}
+        loading={unsubscribe.isPending}
+        onConfirm={() =>
+          unsubscribe.mutate(deckId, {
+            onSuccess: () => {
+              toast.success('No longer following. The deck and its cards stay yours.');
+              setConfirmUnfollow(false);
+            },
+            onError: (error) => toast.error(messageOf(error)),
+          })
+        }
+      />
 
       <ConfirmDialog
         open={confirmDelete}

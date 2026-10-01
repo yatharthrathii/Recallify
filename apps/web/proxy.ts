@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  * is the API's decision, made on the first real request.
  */
 
-const APP_PREFIXES = ['/today', '/decks', '/review', '/stats', '/settings'];
+const APP_PREFIXES = ['/today', '/decks', '/library', '/import', '/review', '/stats', '/settings'];
 const AUTH_PAGES = ['/login', '/register'];
 
 export function proxy(request: NextRequest): NextResponse {

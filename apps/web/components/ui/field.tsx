@@ -1,6 +1,6 @@
 'use client';
 
-import { Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, Eye, EyeOff, Search } from 'lucide-react';
 import { useId, useState, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -158,17 +158,43 @@ export function SelectField({
   return (
     <FieldShell label={label} hint={hint} error={error} aside={aside}>
       {({ id, describedBy, invalid }) => (
-        <select
-          id={id}
-          aria-describedby={describedBy}
-          aria-invalid={invalid || undefined}
-          className={cn(control, 'h-10 appearance-none pr-8', className)}
-          {...rest}
-        >
-          {children}
-        </select>
+        <div className="relative">
+          <select
+            id={id}
+            aria-describedby={describedBy}
+            aria-invalid={invalid || undefined}
+            className={cn(control, 'h-10 appearance-none pr-9', className)}
+            {...rest}
+          >
+            {children}
+          </select>
+          {/* The native arrow is hidden with the native styling; this one says it still opens. */}
+          <ChevronDown
+            aria-hidden
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+          />
+        </div>
       )}
     </FieldShell>
+  );
+}
+
+/** A search box: the label is for screen readers, the icon says what it is to everyone else. */
+export function SearchField({
+  label,
+  className,
+  ...rest
+}: { label: string } & Omit<ComponentProps<'input'>, 'type'>) {
+  const id = useId();
+  return (
+    <label htmlFor={id} className="relative block">
+      <span className="sr-only">{label}</span>
+      <Search
+        aria-hidden
+        className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+      />
+      <input id={id} type="search" className={cn(control, 'h-10 pl-9', className)} {...rest} />
+    </label>
   );
 }
 
