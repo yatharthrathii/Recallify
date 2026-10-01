@@ -251,15 +251,16 @@ Built and covered by integration tests, except where marked. The live document
 is `/docs-json`; this table is the intent, that is the truth.
 
 ```
-POST   /auth/register
-POST   /auth/login            429 after 10 failures per address or 50 per client in 15 minutes
+POST   /auth/register         takes the device's time zone, optionally
+POST   /auth/login            429 after 10 failures per address or 50 per client in 15 minutes;
+                              a reported time zone is kept only for an account without one
 POST   /auth/refresh          rotation + reuse detection
 POST   /auth/logout           revokes the whole family
 POST   /auth/demo             a private account with six months of simulated history; 5 per client per hour
 POST   /auth/forgot-password  emails a one-shot link; 202 whether or not the address exists
 POST   /auth/reset-password   spends the link, sets the password, signs out every device
 GET    /auth/me
-PATCH  /auth/me               name, retention target, daily limits
+PATCH  /auth/me               name, retention target, daily limits, time zone
 DELETE /auth/me               needs the password again. Cascades to everything
 
 GET    /decks                 cursor paginated
@@ -293,7 +294,9 @@ POST   /optimizer/run         fit + backtest in one call. Saves nothing.
 POST   /optimizer/apply       adopt a fitted set (re-checked against bounds)
 POST   /optimizer/reset       back to the published defaults
 
-GET    /stats/overview        xp, level, streak, measured retention
+GET    /stats/overview        xp, level, streak, measured retention. Every day in
+                              /stats is a calendar day in the account's time zone
+                              (`users.timezone`, UTC until a device reports one)
 GET    /stats/heatmap?days=365
 GET    /stats/forecast?days=30&deckId=
 GET    /stats/curve?cardId=|deckId=   forgetting curve series

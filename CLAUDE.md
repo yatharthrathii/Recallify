@@ -74,6 +74,10 @@ That history is why the honesty rules below are not negotiable.
   only, and keeps a changelog written by a conditional insert on every card
   write. Web: `/library`, `/library/:id`, the live strip on a deck page.
   12 integration tests, one two-account E2E flow.
+- Phase 8c done. The loose ends: library and changelog page by cursor
+  ("Show more"), and days are counted in the account's time zone
+  (`users.timezone`, `common/dates.ts`). The hero's demo button wraps while
+  it waits.
 - Next: phase 9, Android.
 
 Rate limits live in Postgres (`rate_limit_hits`), never in memory: the API is
@@ -299,9 +303,15 @@ one thing here nobody else sells. Neither needs the mobile app to exist.
 - **The streak moves forward only.** An offline batch from last week adds to
   the log and the heatmap but does not retroactively repair a broken streak.
   Recomputing it would mean scanning the whole log on every single review.
-- Day bucketing is **UTC**, in `common/dates.ts`. Per-user timezones are a real
-  feature and a later one; the server's local zone would make the streak break
-  at midnight in whatever region the container happens to run in.
+- Day bucketing is **in the account's time zone**, in `common/dates.ts`.
+  `users.timezone` is set from the device at sign-up, filled in by the first
+  sign-in that reports one, and moved only from Settings; null counts as UTC,
+  which is what every account was counted in before the column existed. A
+  calendar day travels as a `Date` at UTC midnight (a day number), and
+  `instantOf` turns it into the moment it begins in a zone; SQL groups with
+  `"col" AT TIME ZONE 'UTC' AT TIME ZONE $zone`. The server's local zone is
+  never used: it would make the streak break at midnight in whatever region
+  the container happens to run in. The AI allowance stays a UTC quota.
 - `/optimizer/run` **saves nothing**. It returns a proposal with the backtest
   attached, because the workload change is frequently *upward* and the user
   should see that before adopting it. Fitting runs inline with a capped
