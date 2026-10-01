@@ -128,7 +128,7 @@ export class ImportService {
           const rows = replayed.flatMap((r) => r.reviews);
           if (rows.length > 0) {
             await tx.review.createMany({ data: rows });
-            await this.stats.absorbHistory(tx, userId, rows.length, now);
+            await this.stats.absorbHistory(tx, userId, rows.length, now, config.timezone);
           }
           if (input.deckId) {
             await this.library.recordCardChange(

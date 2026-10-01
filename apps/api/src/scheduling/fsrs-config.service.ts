@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DEFAULT_CONFIG, DEFAULT_PARAMS, type FsrsConfig } from '@recallify/fsrs';
+import { zoneOf } from '../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** What the user's row contributes to scheduling. */
@@ -7,6 +8,8 @@ export interface UserScheduling extends FsrsConfig {
   readonly dailyNewLimit: number;
   readonly dailyReviewLimit: number;
   readonly usingOptimizedParams: boolean;
+  /** The zone their days are counted in; `UTC` until a device has reported one. */
+  readonly timezone: string;
 }
 
 /**
@@ -28,6 +31,7 @@ export class FsrsConfigService {
         desiredRetention: true,
         dailyNewLimit: true,
         dailyReviewLimit: true,
+        timezone: true,
       },
     });
 
@@ -43,6 +47,16 @@ export class FsrsConfigService {
       dailyNewLimit: user.dailyNewLimit,
       dailyReviewLimit: user.dailyReviewLimit,
       usingOptimizedParams: fitted,
+      timezone: zoneOf(user.timezone),
     };
+  }
+
+  /** Just the zone, for the reads that schedule nothing. */
+  async zone(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    return zoneOf(user.timezone);
   }
 }

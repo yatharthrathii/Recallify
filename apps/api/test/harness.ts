@@ -79,12 +79,16 @@ export function uniqueEmail(label = 'user'): string {
   return `${label}-${randomUUID()}@recallify.test`;
 }
 
-export async function registerUser(h: Harness, label = 'user'): Promise<TestUser> {
+export async function registerUser(
+  h: Harness,
+  label = 'user',
+  extra: Record<string, unknown> = {},
+): Promise<TestUser> {
   const email = uniqueEmail(label);
   const res = await h
     .http()
     .post(`${API}/auth/register`)
-    .send({ email, password: 'correct-horse-battery', displayName: label })
+    .send({ email, password: 'correct-horse-battery', displayName: label, ...extra })
     .expect(201);
 
   const me = await h

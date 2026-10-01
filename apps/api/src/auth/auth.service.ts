@@ -66,6 +66,7 @@ export class AuthService {
         email: input.email,
         passwordHash,
         displayName: input.displayName ?? null,
+        timezone: input.timezone ?? null,
         // Created eagerly so no later code has to cope with stats being absent.
         stats: { create: {} },
       },
@@ -90,7 +91,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: { email: input.email },
-      select: { id: true, email: true, passwordHash: true },
+      select: { id: true, email: true, passwordHash: true, timezone: true },
     });
 
     // Verify against a dummy hash when the email is unknown, so both paths do
@@ -102,6 +103,16 @@ export class AuthService {
     if (!user || !ok) {
       await this.limits.record(accountKey, addressKey);
       throw new UnauthorizedException('Email or password is incorrect.');
+    }
+
+    // An account from before zones were recorded takes the first one a
+    // device reports. One that has a zone keeps it: a week away should not
+    // move the heatmap, and Settings is where a move is made on purpose.
+    if (input.timezone && user.timezone === null) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { timezone: input.timezone },
+      });
     }
 
     return this.tokens.issue(user.id, user.email, undefined, userAgent);
@@ -228,6 +239,7 @@ export class AuthService {
         ...(input.dailyReviewLimit !== undefined
           ? { dailyReviewLimit: input.dailyReviewLimit }
           : {}),
+        ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
       },
     });
     return this.me(userId);
@@ -266,6 +278,7 @@ export class AuthService {
         dailyReviewLimit: true,
         fsrsParams: true,
         paramsOptimizedAt: true,
+        timezone: true,
       },
     });
 

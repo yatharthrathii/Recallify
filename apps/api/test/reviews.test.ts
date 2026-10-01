@@ -345,6 +345,45 @@ describe('reviews', () => {
     }
   });
 
+  it('counts days where the account lives, not where the server runs', async () => {
+    const solo = await registerUser(h, 'kolkata', { timezone: 'Asia/Kolkata' });
+    try {
+      const { cardIds } = await deckWithCards(solo, 1, 'Zones');
+      const now = new Date();
+      // 20:00 UTC yesterday is 01:30 today in Kolkata: a different calendar day.
+      const reviewedAt = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 20, 0, 0),
+      );
+      const inKolkata = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' });
+      const studied = inKolkata.format(reviewedAt);
+      const today = inKolkata.format(now);
+      expect(studied).not.toBe(reviewedAt.toISOString().slice(0, 10));
+
+      await h
+        .http()
+        .post(`${API}/review`)
+        .set(auth(solo))
+        .send({ id: randomUUID(), cardId: cardIds[0], rating: 3, reviewedAt: reviewedAt.toISOString() })
+        .expect(200);
+
+      const heat = await h.http().get(`${API}/stats/heatmap`).set(auth(solo)).expect(200);
+      expect(heat.body.days.map((d: { date: string }) => d.date)).toEqual([studied]);
+
+      const overview = await h.http().get(`${API}/stats/overview`).set(auth(solo)).expect(200);
+      expect(overview.body.streak).toBe(1);
+      expect(overview.body.lastStudyDate.slice(0, 10)).toBe(studied);
+
+      // The card is overdue, so it lands on the Kolkata today, and an exam on
+      // that day is today, not a day that has passed.
+      const forecast = await h.http().get(`${API}/stats/forecast?days=7`).set(auth(solo)).expect(200);
+      expect(forecast.body.days[0]).toEqual({ date: today, due: 1 });
+      const exam = await h.http().get(`${API}/stats/exam?date=${today}`).set(auth(solo)).expect(200);
+      expect(exam.body.daysAway).toBe(0);
+    } finally {
+      await deleteUsers(h, solo);
+    }
+  });
+
   it('measures retention from answers, excluding first-ever reviews', async () => {
     const solo = await registerUser(h, 'retention');
     try {

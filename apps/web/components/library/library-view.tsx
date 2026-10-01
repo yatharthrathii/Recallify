@@ -7,12 +7,12 @@ import { useEffect, useState } from 'react';
 import { DeckSwatch } from '@/components/decks/deck-swatch';
 import { Stagger, StaggerItem } from '@/components/motion';
 import { PageShell } from '@/components/shell/app-shell';
+import { Button } from '@/components/ui/button';
 import { SearchField } from '@/components/ui/field';
 import { Badge, EmptyState, ErrorState, Skeleton } from '@/components/ui/misc';
 
 /** The contract's ceiling on a search; the field stops there rather than the list failing. */
 const QUERY_MAX = 80;
-const PAGE = 50;
 
 /** The value once typing has paused, so a word is one request rather than six. */
 function useDebounced<T>(value: T, ms: number): T {
@@ -32,7 +32,7 @@ export function LibraryView() {
   const [query, setQuery] = useState('');
   const q = useDebounced(query.trim(), 250);
   const library = useLibrary(q || undefined);
-  const items = library.data?.items ?? [];
+  const items = library.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <PageShell
@@ -110,10 +110,15 @@ export function LibraryView() {
               </StaggerItem>
             ))}
           </Stagger>
-          {library.data?.nextCursor ? (
-            <p className="mt-3 text-caption text-ink-muted">
-              The newest {PAGE} are shown. Search by title to find an older one.
-            </p>
+          {library.hasNextPage ? (
+            <div className="mt-4">
+              <Button
+                loading={library.isFetchingNextPage}
+                onClick={() => void library.fetchNextPage()}
+              >
+                Show more
+              </Button>
+            </div>
           ) : null}
         </>
       )}

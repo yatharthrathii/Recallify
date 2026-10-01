@@ -51,7 +51,7 @@ export function DemoButton({
       )}
     >
       {busy ? <Spinner /> : null}
-      {busy ? 'Building six months of history' : children}
+      {busy ? 'Building the demo' : children}
     </button>
   );
 }
