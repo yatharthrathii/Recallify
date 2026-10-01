@@ -5,5 +5,7 @@ import { OptimizerService } from './optimizer.service';
 @Module({
   controllers: [OptimizerController],
   providers: [OptimizerService],
+  // The Memory Report is the same fit, described in sentences.
+  exports: [OptimizerService],
 })
 export class OptimizerModule {}

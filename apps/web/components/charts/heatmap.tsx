@@ -1,9 +1,10 @@
 'use client';
 
 import { formatDate, formatPercent } from '@recallify/core';
-import { memoryLevel, type MemoryLevel } from '@recallify/tokens';
+import { memoryLevel } from '@recallify/tokens';
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { LEVEL_BG_CLASS } from '@/components/ui/misc';
 import { cn } from '@/lib/cn';
 
 interface Day {
@@ -31,13 +32,6 @@ const MONTHS = [
   'Dec',
 ];
 
-const LEVEL_BG: Record<MemoryLevel, string> = {
-  strong: 'bg-mem-strong',
-  good: 'bg-mem-good',
-  fading: 'bg-mem-fading',
-  weak: 'bg-mem-weak',
-  lost: 'bg-mem-lost',
-};
 
 /** How much was done that day, in four steps relative to the busiest day. */
 function intensity(reviews: number, busiest: number): string {
@@ -163,7 +157,7 @@ export function Heatmap({ days, weeks = 53 }: { days: readonly Day[]; weeks?: nu
                             'size-full rounded-xs',
                             retention === null
                               ? 'bg-ink-faint'
-                              : LEVEL_BG[memoryLevel(retention)],
+                              : LEVEL_BG_CLASS[memoryLevel(retention)],
                             intensity(reviews, busiest),
                           )}
                         />

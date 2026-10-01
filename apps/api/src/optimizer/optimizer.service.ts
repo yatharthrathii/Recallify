@@ -11,12 +11,13 @@ import type {
   OptimizerRunResponse,
   OptimizerStatus,
 } from '@recallify/contracts';
-import { DEFAULT_PARAMS, type Rating } from '@recallify/fsrs';
+import { DEFAULT_PARAMS, type FsrsConfig, type FsrsParams, type Rating } from '@recallify/fsrs';
 import {
   MIN_REVIEWS,
   backtest,
   optimize,
   withinBounds,
+  type Evaluation,
   type TrainingReview,
 } from '@recallify/optimizer';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,6 +39,31 @@ import { FsrsConfigService } from '../scheduling/fsrs-config.service';
 const MAX_ITERATIONS = 60;
 const MAX_TRAINING_REVIEWS = 20_000;
 const COOLDOWN_HOURS = 24;
+
+export function toEvaluation(e: Evaluation): OptimizerEvaluation {
+  return {
+    logLoss: e.logLoss,
+    predictions: e.predictions,
+    predictedRetention: e.predictedRetention,
+    actualRetention: e.actualRetention,
+    calibrationError: e.calibrationError,
+    averageIntervalDays: e.averageIntervalDays,
+    estimatedReviewsPerDay: e.estimatedReviewsPerDay,
+  };
+}
+
+/** A fit and its backtest against the published defaults, on the same history. */
+export interface Fit {
+  params: FsrsParams;
+  iterations: number;
+  converged: boolean;
+  initialLoss: number;
+  finalLoss: number;
+  baseline: Evaluation;
+  candidate: Evaluation;
+  lossImprovement: number;
+  workloadChange: number;
+}
 
 @Injectable()
 export class OptimizerService {
@@ -74,6 +100,55 @@ export class OptimizerService {
   }
 
   /**
+   * The history a fit is made from, oldest first, capped.
+   *
+   * Only the three columns the optimizer uses. The stored stabilities are
+   * deliberately left behind: they belong to whatever parameters were live at
+   * the time, and every candidate produces its own. History is replayed from
+   * the ratings, which is the concrete reason Review is append-only.
+   */
+  async trainingReviews(userId: string): Promise<TrainingReview[]> {
+    const rows = await this.prisma.review.findMany({
+      where: { userId },
+      orderBy: { reviewedAt: 'asc' },
+      take: MAX_TRAINING_REVIEWS,
+      select: { cardId: true, rating: true, reviewedAt: true },
+    });
+    return rows.map((r) => ({ cardId: r.cardId, rating: r.rating as Rating, reviewedAt: r.reviewedAt }));
+  }
+
+  /**
+   * The fit itself, and its comparison with the defaults. The report and the
+   * optimizer endpoint both call this, so the caps and the order of the
+   * comparison live in one place.
+   */
+  fit(reviews: readonly TrainingReview[], config: FsrsConfig): Fit {
+    const started = Date.now();
+    const result = optimize(reviews, {
+      startingParams: DEFAULT_PARAMS,
+      maxIterations: MAX_ITERATIONS,
+      config,
+    });
+    // Candidate first, baseline second -- that is the order backtest takes, and
+    // swapping them would report the defaults as the improvement.
+    const comparison = backtest(reviews, result.params, DEFAULT_PARAMS, config);
+    this.logger.log(
+      `fitted params on ${reviews.length} reviews: ${result.iterations} iterations, ${Date.now() - started}ms`,
+    );
+    return {
+      params: result.params,
+      iterations: result.iterations,
+      converged: result.converged,
+      initialLoss: result.initialLoss,
+      finalLoss: result.finalLoss,
+      baseline: comparison.baseline,
+      candidate: comparison.candidate,
+      lossImprovement: comparison.lossImprovement,
+      workloadChange: comparison.workloadChange,
+    };
+  }
+
+  /**
    * Fit parameters to this user's log and report what changed.
    *
    * Nothing is saved. The result is a proposal, so the user sees the
@@ -98,61 +173,23 @@ export class OptimizerService {
       );
     }
 
-    const config = await this.scheduling.forUser(userId);
-
-    // Only the three columns the optimizer uses. The stored stabilities are
-    // deliberately left behind: they belong to whatever parameters were live at
-    // the time, and every candidate produces its own. History is replayed from
-    // the ratings, which is the concrete reason Review is append-only.
-    const rows = await this.prisma.review.findMany({
-      where: { userId },
-      orderBy: { reviewedAt: 'asc' },
-      take: MAX_TRAINING_REVIEWS,
-      select: { cardId: true, rating: true, reviewedAt: true },
-    });
-
-    const reviews: TrainingReview[] = rows.map((r) => ({
-      cardId: r.cardId,
-      rating: r.rating as Rating,
-      reviewedAt: r.reviewedAt,
-    }));
-
-    const started = Date.now();
-    const result = optimize(reviews, {
-      startingParams: DEFAULT_PARAMS,
-      maxIterations: MAX_ITERATIONS,
-      config,
-    });
-
-    // Candidate first, baseline second -- that is the order backtest takes, and
-    // swapping them would report the defaults as the improvement.
-    const comparison = backtest(reviews, result.params, DEFAULT_PARAMS, config);
-    this.logger.log(
-      `fitted params for ${userId}: ${reviews.length} reviews, ` +
-        `${result.iterations} iterations, ${Date.now() - started}ms`,
-    );
-
-    const toEvaluation = (e: typeof comparison.baseline): OptimizerEvaluation => ({
-      logLoss: e.logLoss,
-      predictions: e.predictions,
-      predictedRetention: e.predictedRetention,
-      actualRetention: e.actualRetention,
-      calibrationError: e.calibrationError,
-      averageIntervalDays: e.averageIntervalDays,
-      estimatedReviewsPerDay: e.estimatedReviewsPerDay,
-    });
+    const [config, reviews] = await Promise.all([
+      this.scheduling.forUser(userId),
+      this.trainingReviews(userId),
+    ]);
+    const fit = this.fit(reviews, config);
 
     return {
-      params: [...result.params],
+      params: [...fit.params],
       reviewsUsed: reviews.length,
-      initialLoss: result.initialLoss,
-      finalLoss: result.finalLoss,
-      iterations: result.iterations,
-      converged: result.converged,
-      baseline: toEvaluation(comparison.baseline),
-      candidate: toEvaluation(comparison.candidate),
-      lossImprovement: comparison.lossImprovement,
-      workloadChange: comparison.workloadChange,
+      initialLoss: fit.initialLoss,
+      finalLoss: fit.finalLoss,
+      iterations: fit.iterations,
+      converged: fit.converged,
+      baseline: toEvaluation(fit.baseline),
+      candidate: toEvaluation(fit.candidate),
+      lossImprovement: fit.lossImprovement,
+      workloadChange: fit.workloadChange,
     };
   }
 

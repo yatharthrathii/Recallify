@@ -5,22 +5,33 @@ import {
   card,
   currentUser,
   deck,
+  deckChange,
+  deckChangesPage,
   deckStats,
+  examForecast,
   explanation,
   forecast,
   forgettingCurve,
   generateResult,
   heatmapResponse,
+  importResponse,
+  libraryDeck,
+  libraryDeckDetail,
+  memoryReport,
   optimizerRunResponse,
   optimizerStatus,
   paginated,
   queueResponse,
+  reportStatus,
   reviewHistoryItem,
   reviewOutcome,
   statsOverview,
+  subscriptionStatus,
+  syncResult,
   workloadPreview,
   type AiReportRequest,
   type BatchReviewRequest,
+  type ImportRequest,
   type SubmitReviewRequest,
   type UpdateCardRequest,
   type UpdateDeckRequest,
@@ -31,6 +42,7 @@ import { Transport, type TransportOptions } from './http';
 const deckPage = paginated(deck);
 const cardPage = paginated(card);
 const historyPage = paginated(reviewHistoryItem);
+const libraryPage = paginated(libraryDeck);
 
 export interface CreateDeckInput {
   title: string;
@@ -50,6 +62,17 @@ export interface DraftCard {
   back: string;
   hint?: string | undefined;
 }
+
+/** One request of an import: the wire shape, with dates already ISO strings. */
+export type ImportChunkInput = Omit<ImportRequest, 'cards'> & {
+  cards: {
+    front: string;
+    back: string;
+    hint?: string;
+    suspended?: boolean;
+    reviews?: { id: string; rating: 1 | 2 | 3 | 4; reviewedAt: string; durationMs?: number }[];
+  }[];
+};
 
 export interface GenerateInput {
   deckId: string;
@@ -129,6 +152,40 @@ export function createApiClient(options: TransportOptions) {
       curve: (query: { cardId?: string; deckId?: string }) =>
         http.request('/stats/curve', { query, schema: forgettingCurve }),
       workload: () => http.request('/stats/workload', { schema: workloadPreview }),
+      exam: (query: { date: string; deckId?: string }) =>
+        http.request('/stats/exam', { query, schema: examForecast }),
+    },
+
+    importCards: (body: ImportChunkInput) =>
+      http.request('/import', { method: 'POST', body, schema: importResponse }),
+
+    library: {
+      list: (query: { q?: string; cursor?: string; limit?: number } = {}) =>
+        http.request('/library', { query, schema: libraryPage }),
+      detail: (deckId: string) => http.request(`/library/${deckId}`, { schema: libraryDeckDetail }),
+      changes: (deckId: string, query: { cursor?: string; limit?: number } = {}) =>
+        http.request(`/library/${deckId}/changes`, { query, schema: deckChangesPage }),
+      publish: (deckId: string) =>
+        http.request(`/library/${deckId}/publish`, { method: 'POST', schema: deck }),
+      unpublish: (deckId: string) =>
+        http.request(`/library/${deckId}/unpublish`, { method: 'POST', schema: deck }),
+      note: (deckId: string, text: string) =>
+        http.request(`/library/${deckId}/notes`, { method: 'POST', body: { text }, schema: deckChange }),
+      subscribe: (deckId: string) =>
+        http.request(`/library/${deckId}/subscribe`, { method: 'POST', schema: deck }),
+      status: (deckId: string) =>
+        http.request(`/library/subscriptions/${deckId}`, { schema: subscriptionStatus }),
+      sync: (deckId: string) =>
+        http.request(`/library/subscriptions/${deckId}/sync`, { method: 'POST', schema: syncResult }),
+      unsubscribe: (deckId: string) =>
+        http.request(`/library/subscriptions/${deckId}`, { method: 'DELETE', schema: deck }),
+    },
+
+    report: {
+      status: () => http.request('/report', { schema: reportStatus }),
+      create: (tzOffsetMinutes: number) =>
+        http.request('/report', { method: 'POST', body: { tzOffsetMinutes }, schema: memoryReport }),
+      get: (id: string) => http.request(`/report/${id}`, { schema: memoryReport }),
     },
 
     ai: {

@@ -1,13 +1,18 @@
 import { z } from 'zod';
 import { cardSource, cardState, cuid, isoDate, pageQuery, queryBoolean } from './common';
 
-export const cardText = z.string().trim().min(1).max(4000);
+/** The same ceilings the import reader applies at read time, so a preview shows what will be sent. */
+export const CARD_TEXT_MAX = 4000;
+export const HINT_MAX = 500;
+
+export const cardText = z.string().trim().min(1).max(CARD_TEXT_MAX);
+export const cardHint = z.string().trim().max(HINT_MAX);
 
 export const createCardRequest = z.object({
   deckId: cuid,
   front: cardText,
   back: cardText,
-  hint: z.string().trim().max(500).optional(),
+  hint: cardHint.optional(),
 });
 export type CreateCardRequest = z.infer<typeof createCardRequest>;
 
@@ -51,6 +56,8 @@ export const card = z
     back: z.string(),
     hint: z.string().nullable(),
     source: cardSource,
+    /** For a card in a subscribed copy: the author's card it mirrors. */
+    sourceCardId: cuid.nullable(),
     suspendedAt: isoDate.nullable(),
     createdAt: isoDate,
     updatedAt: isoDate,

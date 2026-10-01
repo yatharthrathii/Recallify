@@ -63,7 +63,18 @@ That history is why the honesty rules below are not negotiable.
   reset (Brevo), Playwright E2E (`apps/e2e`), Lighthouse CI, size-limit, uptime
   workflow, README with GIF. Web live at recallify-five.vercel.app, API at
   recallify-api.vercel.app.
-- Next: phase 8, import and the Memory Report.
+- Phase 8 done. `packages/import` reads `.apkg` (both collection formats)
+  and CSV in the browser; `POST /import` replays each card's history through
+  the scheduler; `POST /report` makes the Memory Report (the fit in words,
+  recall by hour and weekday, leeches, deck cost), stored; `GET /stats/exam`
+  projects every card to a date. Web: `/import`, `/stats/report`, the exam
+  section on Stats. 56 reader tests at 100%, 12 API tests, one E2E flow.
+- Phase 8b done. Live decks: `apps/api/src/library` publishes a deck in
+  place, makes a follower's copy whose cards carry `sourceCardId`, syncs text
+  only, and keeps a changelog written by a conditional insert on every card
+  write. Web: `/library`, `/library/:id`, the live strip on a deck page.
+  12 integration tests, one two-account E2E flow.
+- Next: phase 9, Android.
 
 Rate limits live in Postgres (`rate_limit_hits`), never in memory: the API is
 serverless. The web BFF forwards the visitor's address as `x-client-ip`; it is
@@ -84,6 +95,84 @@ Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
 brings an existing Anki user in — without it they would have to abandon years of
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
+
+### Notes carried out of phase 8b
+
+- **Sync writes text and reads no state.** `LibraryService.diff` reads ids
+  and stamps only; `sync` then fetches text for just the cards that need it,
+  so a 5,000-card deck is not pulled through memory on every page open, and
+  nothing about a follower's stability is ever selected. Matching is by
+  `sourceCardId`; matching by text would break the moment the author fixed a
+  typo.
+- **`Card.textUpdatedAt`, not `updatedAt`.** `updatedAt` moves on every
+  review, so comparing it would make an author who studies their own deck
+  overwrite every follower's own edits. `textUpdatedAt` moves only in
+  `CardsService.update`, and only when the text actually changed; an
+  unchanged save records nothing. `(deckId, sourceCardId)` is unique, and
+  additions use `skipDuplicates`, so two syncs racing add a card once.
+- **A removed card is suspended and detached.** It is the follower's own
+  from then on: un-suspending it does not get it re-suspended next sync, and
+  it can be deleted. A card that still follows the author's cannot be
+  deleted (409): the next sync would bring it straight back. The card
+  dialog hides Delete for those.
+- **Import review ids are per account.** `reviewIdFor(userId, id)` in
+  `common/ids.ts` hashes the account into the file's deterministic id, so
+  two people importing the same shared export never collide on the global
+  review primary key, while one person importing twice still gets 409. Card
+  ids for an import are made in Node (`newCardId`) so reviews can name them
+  before the INSERT, instead of trusting RETURNING order.
+- **The changelog costs nothing until publishing.** Cards report every write
+  through `recordCardChange`, a single `INSERT ... SELECT ... WHERE isPublic`,
+  so the cards module never asks whether a deck is published and an
+  unpublished deck pays one no-op statement. The row's id is a UUID from
+  Node, not a cuid, so `deckChange.id` is a plain string in the contract.
+- No foreign key from `Card.sourceCardId`: an author deleting a card is the
+  signal a sync uses to suspend the copy. `Deck.sourceDeckId` does have one,
+  with SetNull, so deleting the deck detaches copies rather than deleting them.
+- A follower's own edit survives until the author edits that card, at which
+  point the author's text wins. The deck is theirs to maintain; that is what
+  following means, and it is said on the page.
+- Publishing is refused for demo accounts (403, the AI precedent) because the
+  account is swept after a day and its followers would be left with a copy
+  that no longer syncs.
+
+### Notes carried out of phase 8
+
+- **The file is read on the device.** A `.apkg` is mostly media, which is not
+  imported; the cards and their log are small. Reading it in the browser
+  means no upload limit, an instant preview, and an API that knows nothing
+  about the format. `sql.js` is loaded by a script tag from
+  `public/vendor` (copied there by `next.config.ts` when it loads, gitignored),
+  not imported: its loader is written for Node, workers and browsers at once
+  and a bundler tries to satisfy every branch. The copy lives in the config
+  rather than a `prebuild` hook because a host running `next build` directly
+  never runs lifecycle scripts.
+- **Replay, do not translate.** The source's scheduling state is ignored;
+  its reviews are replayed through this scheduler, so an imported card's
+  stability is one this engine computed. Exact where a translation would be
+  a guess, and it keeps `Review` the only source of state.
+- **Review ids come from the source's ids** (`reviewIdFor`), so importing
+  the same file twice collides on the primary key and is refused with 409.
+  The import page reads that as "already imported" and moves on to the next
+  deck.
+- Import writes card and review rows directly, like the demo seed: a whole
+  history and the state it produces have to land in one transaction. The
+  deck goes through `DecksService.create(…, tx)` and the stats through
+  `StatsService.absorbHistory`, which also recomputes the streak from the
+  whole log, since imported reviews sit anywhere in the past. Imported
+  reviews earn XP like lived ones, so the stats page reads the same either way.
+- Express parses bodies to 100 kB by default. `configureApp` raises it to
+  4 MB; an import request is up to 500 cards with histories.
+- **Prisma binds a JS number in `$queryRaw` as bigint.**
+  `make_interval(mins => $1)` failed with "function does not exist"; the
+  parameter needs `::int`.
+- The report is stored (`memory_reports`), one a day or after 50 new
+  reviews, so "import, then read the report" works at once. Below 400
+  reviews it scores the defaults on the log instead of fitting, and says so.
+- The E2E fixture (`apps/e2e/fixtures/sample.apkg`) is generated from a spec
+  by `WRITE_FIXTURE=1 vitest run test/fixture.test.ts` in `packages/import`,
+  in the zstd and protobuf format, so the browser test takes the path a real
+  export takes.
 
 ### Notes carried out of phase 6
 

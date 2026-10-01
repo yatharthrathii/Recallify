@@ -17,6 +17,8 @@ export default tseslint.config(
       '**/node_modules/**',
       '**/*.config.*',
       'apps/api/prisma/**',
+      // Third-party files copied into place for the browser (apps/web/next.config.ts).
+      'apps/web/public/vendor/**',
     ],
   },
   js.configs.recommended,

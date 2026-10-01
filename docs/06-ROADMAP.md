@@ -234,7 +234,7 @@ Everything after this is upside.
 
 ---
 
-## Phase 8 — Anki import and the Memory Report (1.5 weeks)
+## Phase 8 — Anki import and the Memory Report (1.5 weeks) · done
 
 The acquisition door, and the first thing anyone might pay for. Deliberately
 placed before mobile: it needs no app, and it is what brings users in.
@@ -245,11 +245,23 @@ placed before mobile: it needs no app, and it is what brings users in.
 once: a way for an Anki user to move in without retyping anything, and the
 review history the report below is built from.
 
-- `POST /import/anki` — upload, parse, map notes and cards, preserve the
-  review log
-- Map Anki's scheduling state onto ours where it exists; fall back to NEW
-  where it does not, and say so rather than inventing stability
-- CSV import shares the same pipeline
+- [x] **Read on the device, not uploaded.** `packages/import` opens the zip,
+      reads both collection formats (the JSON one and the zstd-compressed
+      protobuf one), renders each card's template to text, and keeps every
+      review. A `.apkg` is mostly media; the cards and their log are small,
+      so the preview is instant and nothing large crosses the wire.
+- [x] **`POST /import`** takes one shape whatever the file was: cards with
+      their reviews, in requests of up to 500 cards, into a new or existing
+      deck. Each card's reviews are replayed through this scheduler, so its
+      stability is one this engine computed. No scheduling state is
+      translated from the source: the roadmap's "map where it exists" was
+      dropped in favour of replay, which is exact where translation would be
+      a guess. A card with no reviews arrives new, and the preview says so.
+- [x] Review ids are derived from the source's own ids, so importing a file
+      twice is refused with 409 rather than doubling a history.
+- [x] CSV and the source app's plain-text export share the pipeline.
+- [x] Images and audio are left behind, and the preview counts the cards
+      that referred to them.
 
 This is the single biggest reason an Anki user would try Recallify. Without it
 they would have to abandon years of history, and they will not.
@@ -261,9 +273,15 @@ Anki ships an FSRS optimizer. It returns 21 numbers and explains none of them.
 this turns that into something a person can read.
 
 ```
-POST /report        an Anki export, or the user's own history
-GET  /report/:id    the result
+POST /report        the user's own history (an export is imported first)
+GET  /report        the latest, and whether a new one is allowed
+GET  /report/:id    a stored one
 ```
+
+Built as specified, with two additions: the report is stored, so it can be
+reread and compared; and below 400 reviews it scores the published defaults
+on the log rather than fitting to noise, and says so. Hour-of-day patterns
+are bucketed in the visitor's own timezone, sent with the request.
 
 Contents:
 
@@ -295,6 +313,11 @@ should be shown with that calibration error beside it rather than as a single
 confident number. Below `MIN_REVIEWS` it is shown with the published defaults
 and labelled as such.
 
+Built on the stats page. "The reviews that would move the number most" became
+the cards a single Good answer today would lift the most, computed by running
+the scheduler on each card; simulating the weeks in between would be a guess
+dressed as a number.
+
 This is new presentation over existing mathematics, which is why it lives here
 and not in its own phase.
 
@@ -302,11 +325,13 @@ The engine for all of this exists. Phase 8 is presentation and the importer,
 not new algorithms.
 
 **Ships:** a reason for an existing Anki user to show up, and the first
-candidate for a paid tier.
+candidate for a paid tier. Shipped: 56 tests on the readers at 100% coverage,
+12 integration tests on the endpoints, and an end-to-end run from a generated
+export through the report.
 
 ---
 
-## Phase 8b — Live decks (2 weeks)
+## Phase 8b — Live decks (2 weeks) · done
 
 A deck other people subscribe to, which its author keeps improving — without
 anyone's review history being reset when a card is corrected.
@@ -320,18 +345,34 @@ it — so editing a card's text has never touched its schedule.
 
 What is new:
 
-- A published deck and a subscription to it
-- Card identity that survives an author's edit: a subscriber's copy points at
-  the source card, and a text change propagates while stability, difficulty
-  and the log stay with the subscriber
-- Additions and deletions from the author arrive as new cards and as
-  suspensions — never as deletions of a subscriber's history
-- A changelog per deck, so a subscriber can see what changed and why
+- [x] **Published in place.** A deck goes into the library as itself, no
+      copy on the author's side: `isPublic` and `publishedAt` on the deck.
+      Demo accounts cannot publish, since they vanish after a day.
+- [x] **A follower's copy is an ordinary deck** with `sourceDeckId`, and its
+      cards carry `sourceCardId`. Sync matches by that id, never by text,
+      writes only `front`, `back` and `hint`, and never reads the copy's
+      state or log. An author's addition arrives as a new card; a deletion
+      suspends the copy's card. A follower's own edit to a card stands until
+      the author next edits that card.
+- [x] **The changelog** is written by one conditional INSERT on every card
+      write, inside the write's own transaction, which stores nothing for a
+      deck that is not published, plus notes the author adds. A follower's
+      deck page shows what has changed since their last sync and takes it
+      on arrival.
+- [x] **Edits are text edits.** `Card.textUpdatedAt` moves only when the
+      text changes, so an author studying their own deck never overwrites a
+      follower's own edit. Two syncs racing add a card once.
+- [x] Unpublishing leaves every copy standing and stops the flow; deleting the
+      deck detaches them. Unfollowing detaches and keeps everything.
+- [x] Web: `/library`, `/library/:id`, the live strip on a deck page for
+      authors and followers, publish and follow flows. 12 integration tests,
+      one end-to-end flow with two accounts.
 
 Content is the harder half. A live deck is only worth subscribing to if
 someone keeps it good, and that is writing and maintenance, not engineering.
 
-**Ships:** the feature a paid tier would actually be built around.
+**Ships:** the feature a paid tier would actually be built around. Free for
+now: there is no billing until there are users (phase 10).
 
 ---
 

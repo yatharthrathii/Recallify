@@ -87,7 +87,7 @@ We will not beat Anki. We are not trying to. The README says so plainly.
 
 | # | Feature | Phase |
 |---|---|---|
-| 21 | **Anki `.apkg` import** — the door an existing Anki user walks in through | 8 |
+| 21 | **Anki `.apkg` import** — the door an existing Anki user walks in through | 8, done |
 | 22 | **Memory Report** — the optimizer's output, made readable | 8 |
 | 23 | Android app, full feature parity, offline-first | 9 |
 | 24 | Public/shareable decks | later |

@@ -28,6 +28,19 @@ private account with six months of history, deleted after a day.
 - **Fits the scheduler to you.** After 400 reviews, gradient descent on your own
   log fits new parameters, backtested against the defaults side by side before
   you adopt them.
+- **Imports your history.** A `.apkg` export or a CSV is read in the browser,
+  never uploaded, and every review you gave a card comes with it. The reviews
+  are replayed through this scheduler, so each card arrives with a stability
+  this engine computed rather than a number translated from another model.
+  Importing the same file twice is refused, not counted twice.
+- **Reads your log back to you.** The Memory Report says in sentences how fast
+  you forget against the average learner, when you remember best, which cards
+  keep failing and what each deck returns for its reviews. The exam-day
+  forecast projects every card to a date and shows the range beside the number.
+- **Live decks.** Publish a deck and keep improving it. Anyone who follows it
+  gets their own copy, scheduled by their own answers; your later edits reach
+  their cards as text only, and their progress is never reset. A changelog
+  says what changed and, if you wrote one, why.
 - **Keeps working offline.** Answers go to an outbox and are sent when the
   connection returns, each with an id made on the device, so a retry is never
   counted twice. A service worker lets the review screen open with no connection,
@@ -42,7 +55,8 @@ private account with six months of history, deleted after a day.
 
 ### What it does not do
 
-- Import from other apps. Planned, not built.
+- Import images or audio. Cards come across with their text, hints and whole
+  review history; media stays behind, and the preview counts what it skipped.
 - Run as a native app. The Android app is in development; the web app is built
   phone first and can be added to the home screen.
 - Promise fewer reviews. A model fitted to someone who forgets quickly asks for
@@ -77,6 +91,7 @@ packages/
   optimizer/    fits parameters to a review log, with a backtest
   contracts/    Zod schemas: validation, types and OpenAPI, defined once
   core/         API client, session logic, outbox, formatting, React hooks
+  import/       reads .apkg and CSV exports into one shape, in the browser
   tokens/       design tokens, the only place a colour value may exist
   config/       shared TypeScript and ESLint presets
 ```
@@ -120,9 +135,9 @@ Every push runs five jobs in [CI](.github/workflows/ci.yml):
 | Job | What it proves |
 |---|---|
 | lint, typecheck, build | Zero lint warnings allowed. Size budgets on the engine and the web bundle |
-| unit tests | About 200 tests over the packages. `packages/fsrs` is held at 100% coverage |
-| integration tests | About 90 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets |
-| end to end | Playwright on the production builds, desktop and phone: sign up to review to stats, demo, offline review |
+| unit tests | About 260 tests over the packages. `packages/fsrs`, `optimizer` and `import` are held at 100% coverage |
+| integration tests | About 115 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets, import, the report, live decks |
+| end to end | Playwright on the production builds, desktop and phone: sign up to review to stats, demo, offline review, import to report, publish and follow |
 | lighthouse | Accessibility, best practices and SEO must stay at 95 or above on public pages |
 
 The FSRS implementation is checked against

@@ -1,5 +1,6 @@
 import type { UpdateCardRequest, UpdateDeckRequest, UpdateSettingsRequest } from '@recallify/contracts';
 import {
+  keepPreviousData,
   useMutation,
   useQuery,
   useQueryClient,
@@ -12,6 +13,7 @@ import type {
   CreateDeckInput,
   DraftCard,
   GenerateInput,
+  ImportChunkInput,
 } from '../api/client';
 import { ApiError } from '../api/http';
 import { keys } from '../keys';
@@ -86,6 +88,9 @@ function refreshDecks(qc: QueryClient): void {
   void qc.invalidateQueries({ queryKey: keys.decks.all });
   void qc.invalidateQueries({ queryKey: keys.stats.all });
   void qc.invalidateQueries({ queryKey: keys.review.all });
+  // A rename, an archive or a card write changes what the library shows: a
+  // published deck's changelog, a copy's pending count, the list itself.
+  void qc.invalidateQueries({ queryKey: keys.library.all });
 }
 
 export function useCreateDeck() {
@@ -237,6 +242,152 @@ export function useCurve(target: { cardId?: string; deckId?: string }, enabled =
 export function useWorkload() {
   const api = useApi();
   return useQuery({ queryKey: keys.stats.workload, queryFn: api.stats.workload });
+}
+
+export function useExam(date: string | null, deckId?: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.stats.exam(date ?? '', deckId),
+    queryFn: () => api.stats.exam({ date: date as string, ...(deckId ? { deckId } : {}) }),
+    enabled: date !== null,
+  });
+}
+
+// ---------------------------------------------------------------- import
+
+/**
+ * One request of an import. The caller loops over chunks; each success
+ * changes the deck list, the stats and the queue, so all three refresh.
+ */
+export function useImportCards() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ImportChunkInput) => api.importCards(body),
+    onSuccess: () => {
+      refreshCards(qc);
+      void qc.invalidateQueries({ queryKey: keys.report.status });
+    },
+  });
+}
+
+// ---------------------------------------------------------------- library
+
+export function useLibrary(q?: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.list(q),
+    queryFn: () => api.library.list({ ...(q ? { q } : {}), limit: 50 }),
+    // The last list stays on screen while a new search loads, instead of
+    // skeletons flashing on every keystroke.
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useLibraryDeck(deckId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.detail(deckId),
+    queryFn: () => api.library.detail(deckId),
+  });
+}
+
+export function useDeckChanges(deckId: string, enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.changes(deckId),
+    queryFn: () => api.library.changes(deckId, { limit: 50 }),
+    enabled,
+  });
+}
+
+/** For a subscribed copy: what a sync would do, and the author's notes since. */
+export function useSubscription(deckId: string, enabled = true) {
+  const api = useApi();
+  return useQuery({
+    queryKey: keys.library.status(deckId),
+    queryFn: () => api.library.status(deckId),
+    enabled,
+  });
+}
+
+function refreshLibrary(qc: QueryClient): void {
+  void qc.invalidateQueries({ queryKey: keys.library.all });
+  refreshCards(qc);
+}
+
+export function usePublishDeck() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { deckId: string; publish: boolean }) =>
+      input.publish ? api.library.publish(input.deckId) : api.library.unpublish(input.deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+export function useAddDeckNote() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { deckId: string; text: string }) =>
+      api.library.note(input.deckId, input.text),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: keys.library.all }),
+  });
+}
+
+export function useSubscribe() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deckId: string) => api.library.subscribe(deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+export function useSyncSubscription() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deckId: string) => api.library.sync(deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+export function useUnsubscribe() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (deckId: string) => api.library.unsubscribe(deckId),
+    onSuccess: () => refreshLibrary(qc),
+  });
+}
+
+// ---------------------------------------------------------------- report
+
+export function useReportStatus() {
+  const api = useApi();
+  return useQuery({ queryKey: keys.report.status, queryFn: api.report.status });
+}
+
+export function useReport(id: string) {
+  const api = useApi();
+  return useQuery({ queryKey: keys.report.detail(id), queryFn: () => api.report.get(id) });
+}
+
+/** Sends the visitor's UTC offset, so hour-of-day findings are in their own clock. */
+export function useCreateReport() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.report.create(-new Date().getTimezoneOffset()),
+    onSuccess: (report) => {
+      qc.setQueryData(keys.report.detail(report.id), report);
+      void qc.invalidateQueries({ queryKey: keys.report.all });
+      // The exam forecast quotes the latest report's calibration.
+      void qc.invalidateQueries({ queryKey: keys.stats.all });
+    },
+  });
 }
 
 // ---------------------------------------------------------------- ai

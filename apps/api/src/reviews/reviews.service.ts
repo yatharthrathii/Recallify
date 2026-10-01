@@ -25,29 +25,8 @@ import {
 import { startOfDay } from '../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService } from '../scheduling/fsrs-config.service';
+import { clampReviewedAt, reviewLogColumns } from '../scheduling/review-row';
 import { StatsService } from '../stats/stats.service';
-
-/**
- * How far ahead of the server a device's clock is allowed to be.
- *
- * `reviewedAt` comes from the device on purpose -- a review taken on a plane
- * happened when it happened. But a phone whose clock is set to 2031 would
- * otherwise push every card years into the future, and nothing would ever come
- * back. A few minutes covers ordinary drift; beyond that the server's clock
- * wins.
- */
-const MAX_CLOCK_SKEW_MS = 5 * 60_000;
-
-/** A review lifts the card's state forward, so replaying the past is not allowed. */
-function clampReviewedAt(requested: Date, lastReviewedAt: Date | null, now: Date): Date {
-  const ceiling = new Date(now.getTime() + MAX_CLOCK_SKEW_MS);
-  let at = requested > ceiling ? now : requested;
-  // Two reviews of the same card cannot happen in the wrong order. An offline
-  // batch that arrives shuffled is sorted before it gets here; this catches the
-  // rest.
-  if (lastReviewedAt && at < lastReviewedAt) at = lastReviewedAt;
-  return at;
-}
 
 function toSchedulingCard(row: CardRow): SchedulingCard {
   return {
@@ -107,11 +86,6 @@ export class ReviewsService {
     const result = schedule(before, input.rating as Rating, reviewedAt, config, Math.random());
     const { card: after, log } = result;
 
-    const scheduledDays = Math.max(
-      0,
-      Math.round((after.dueAt.getTime() - reviewedAt.getTime()) / DAY_MS),
-    );
-
     try {
       const updated = await this.prisma.$transaction(async (tx) => {
         await tx.review.create({
@@ -120,14 +94,7 @@ export class ReviewsService {
             cardId: card.id,
             userId,
             rating: input.rating,
-            prevState: log.prevState,
-            prevStability: log.prevStability,
-            prevDifficulty: log.prevDifficulty,
-            newStability: log.newStability,
-            newDifficulty: log.newDifficulty,
-            scheduledDays,
-            elapsedDays: Math.round(log.elapsedDays),
-            retrievability: log.retrievability,
+            ...reviewLogColumns(log, after, reviewedAt),
             durationMs: input.durationMs ?? null,
             reviewedAt,
           },

@@ -34,6 +34,12 @@ export const deck = z.object({
   archivedAt: isoDate.nullable(),
   cardCount: z.number().int().min(0),
   dueCount: z.number().int().min(0),
+  /** Set while the deck is in the library. */
+  publishedAt: isoDate.nullable(),
+  /** Copies of this deck other people are studying from. */
+  subscriberCount: z.number().int().min(0),
+  /** For a subscribed copy: the author's deck it follows. */
+  sourceDeckId: cuid.nullable(),
   createdAt: isoDate,
   updatedAt: isoDate,
 });

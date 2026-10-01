@@ -162,22 +162,3 @@ export function simulate(decks: readonly DemoDeck[], now: Date, seed = Date.now(
   const studyDays = [...days].sort((a, b) => a - b).map((d) => new Date(d));
   return { cards, reviewCount, studyDays };
 }
-
-/** Current and longest runs of consecutive UTC study days. */
-export function streaks(
-  studyDays: readonly Date[],
-  now: Date,
-): { current: number; longest: number } {
-  let longest = 0;
-  let run = 0;
-  let prev: number | null = null;
-  for (const day of studyDays) {
-    const n = Math.round(day.getTime() / DAY_MS);
-    run = prev !== null && n === prev + 1 ? run + 1 : 1;
-    longest = Math.max(longest, run);
-    prev = n;
-  }
-  const today = Math.round(startOfDay(now).getTime() / DAY_MS);
-  const current = prev !== null && today - prev <= 1 ? run : 0;
-  return { current, longest };
-}

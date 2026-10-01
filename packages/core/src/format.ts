@@ -57,6 +57,11 @@ export function formatCount(value: number): string {
     .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
+/** "1 follower", "12 followers": the one phrase the library repeats everywhere. */
+export function formatFollowers(count: number): string {
+  return `${formatCount(count)} ${count === 1 ? 'follower' : 'followers'}`;
+}
+
 /**
  * Roughly how long a queue will take, at the pace people actually review.
  * Eight seconds a card is the usual Anki average; it is an estimate and the UI

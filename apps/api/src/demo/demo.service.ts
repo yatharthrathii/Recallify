@@ -5,7 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
 import { levelFromXp } from '../stats/stats.service';
 import { DEMO_DECKS } from './content';
-import { simulate, streaks, type Simulation } from './simulate';
+import { streaks } from '../stats/streaks';
+import { simulate, type Simulation } from './simulate';
 
 /** A demo account lives for a day. Nobody comes back to one. */
 export const DEMO_TTL_MS = 24 * 3_600_000;

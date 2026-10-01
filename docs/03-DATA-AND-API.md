@@ -167,6 +167,45 @@ model AiReport {
   createdAt DateTime @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// A Memory Report as it was when it was made. The fit inside it is expensive
+// and the findings describe one moment's log, so it is stored and reread, and
+// an earlier one can be set beside a later one.
+model MemoryReport {
+  id          String   @id @default(cuid())
+  userId      String
+  reviewCount Int                          // the log's size then; 50 more allows a new one
+  data        Json                         // the whole report, shaped by contracts/report.ts
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
+
+// Live decks. An author's deck is published in place (isPublic, publishedAt).
+// A follower's copy is an ordinary deck with sourceDeckId set; its cards
+// carry sourceCardId, the author's card they mirror, and sourceUpdatedAt,
+// that card's textUpdatedAt when the text was last taken. Sync compares
+// those. Card.textUpdatedAt moves only when front, back or hint change,
+// never on a review, so an author who studies their own deck changes
+// nothing for followers. (deckId, sourceCardId) is unique on cards, so two
+// syncs racing cannot copy a card twice. The copy's state and log are never
+// read by sync, only its text written. There is no foreign key from
+// sourceCardId: an author deleting a card is exactly the signal that
+// suspends the copy, which is then detached and the follower's own.
+enum DeckChangeKind { ADDED EDITED REMOVED NOTE }
+
+model DeckChange {
+  id        String         @id
+  deckId    String                       // the author's deck
+  kind      DeckChangeKind
+  cardId    String?                      // the author's card, when about one
+  summary   String                       // the question, a count, or the note
+  createdAt DateTime       @default(now())
+
+  deck Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  @@index([deckId, createdAt])
+}
 ```
 
 ### v1 bugs this schema fixes, explicitly
@@ -260,10 +299,39 @@ GET    /stats/forecast?days=30&deckId=
 GET    /stats/curve?cardId=|deckId=   forgetting curve series
 GET    /stats/workload        reviews/day at every retention target, one response
 
-POST   /import/anki           phase 8
-POST   /import/csv            phase 8
-POST   /report                phase 8
-GET    /report/:id            phase 8
+GET    /stats/exam?date=&deckId=   cards still known on a date: expectation, range,
+                                   the ones most likely gone, the best single reviews today
+
+POST   /import                cards with their history, into a new or existing deck.
+                              Up to 500 cards and 5,000 reviews a request; each card's
+                              reviews are replayed through the scheduler. The file is
+                              read on the device by packages/import, never uploaded.
+                              Review ids are stored per account (a hash of the account
+                              and the file's id), so one account importing a file twice
+                              is refused with 409 and two accounts importing the same
+                              shared deck are not.
+                              409 when a review id is already stored (imported before).
+GET    /report                the latest Memory Report, and whether a new one is allowed
+POST   /report                make one: a fit from 400 reviews, the curve against the
+                              average, recall by hour and weekday, leeches, deck cost,
+                              all in sentences. Stored. One a day, or after 50 new reviews.
+GET    /report/:id            a stored report
+
+GET    /library?q=            published decks, newest first, with follower counts
+GET    /library/:deckId       one, with sample cards and its changelog
+GET    /library/:deckId/changes
+POST   /library/:deckId/publish      into the library; 403 for a demo account
+POST   /library/:deckId/unpublish    out; followers keep their copies
+POST   /library/:deckId/notes        a line in the changelog: the why
+POST   /library/:deckId/subscribe    a copy in the caller's account, every card new
+GET    /library/subscriptions/:deckId        what a sync would do, and the author's
+                                             changes since the last one
+POST   /library/subscriptions/:deckId/sync   text only: edits reach the copy's cards,
+                                             additions arrive new (suspended if the author
+                                             had suspended them), deletions suspend and
+                                             detach. DELETE /cards/:id is 409 for a card
+                                             that still follows one of the author's.
+DELETE /library/subscriptions/:deckId        stop following; the deck and its history stay
 
 GET    /health                liveness  (also the uptime ping target)
 GET    /ready                 readiness — checks DB

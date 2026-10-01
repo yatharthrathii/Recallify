@@ -29,7 +29,9 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex h-5 items-center rounded-sm border px-1.5 text-[11px] font-medium leading-none',
+        // Font and tracking are reset so a badge beside a display heading keeps
+        // the body face rather than inheriting the heading's tight letterfit.
+        'inline-flex h-5 shrink-0 items-center whitespace-nowrap rounded-sm border px-1.5 font-sans text-[11px] font-medium leading-none tracking-normal',
         tone === 'neutral' && 'border-line-strong text-ink-muted',
         tone === 'info' && 'border-info/40 text-info',
         tone === 'danger' && 'border-danger/40 text-danger',
@@ -52,7 +54,8 @@ export function StateBadge({ state }: { state: keyof typeof STATE_LABEL }) {
   return <Badge>{STATE_LABEL[state]}</Badge>;
 }
 
-const LEVEL_CLASS: Record<MemoryLevel, string> = {
+/** Background and text classes for the five memory levels, used by every chart that colours by recall. */
+export const LEVEL_BG_CLASS: Record<MemoryLevel, string> = {
   strong: 'bg-mem-strong',
   good: 'bg-mem-good',
   fading: 'bg-mem-fading',
@@ -86,7 +89,7 @@ export function Recall({
     <span className={cn('inline-flex items-center gap-1.5', className)}>
       <span
         aria-hidden
-        className={cn('size-2 rounded-full', LEVEL_CLASS[memoryLevel(value)])}
+        className={cn('size-2 rounded-full', LEVEL_BG_CLASS[memoryLevel(value)])}
       />
       <span className="tabular text-ui text-ink">{formatPercent(value)}</span>
     </span>
