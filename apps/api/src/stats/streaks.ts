@@ -1,16 +1,17 @@
-import { DAY_MS, startOfDay } from '../common/dates';
+import { DAY_MS } from '../common/dates';
 
 /**
- * Current and longest runs of consecutive UTC study days.
+ * Current and longest runs of consecutive study days.
  *
  * `recordReview` moves the streak forward one review at a time; this is the
  * whole-history version for the two places the log is written in bulk: a
- * seeded account, and an import. Days must be distinct and sorted, oldest
- * first.
+ * seeded account, and an import. Days are day values (see `common/dates`),
+ * distinct and sorted oldest first, and `today` is the same kind of value:
+ * the day the user is in, not the server.
  */
 export function streaks(
   studyDays: readonly Date[],
-  now: Date,
+  today: Date,
 ): { current: number; longest: number } {
   let longest = 0;
   let run = 0;
@@ -21,7 +22,7 @@ export function streaks(
     longest = Math.max(longest, run);
     prev = n;
   }
-  const today = Math.round(startOfDay(now).getTime() / DAY_MS);
-  const current = prev !== null && today - prev <= 1 ? run : 0;
+  const now = Math.round(today.getTime() / DAY_MS);
+  const current = prev !== null && now - prev <= 1 ? run : 0;
   return { current, longest };
 }
