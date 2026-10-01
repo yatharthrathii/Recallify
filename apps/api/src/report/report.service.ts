@@ -7,7 +7,6 @@ import {
 import { Prisma } from '@prisma/client';
 import type {
   MemoryReport,
-  OptimizerEvaluation,
   ReportCurve,
   ReportDeck,
   ReportLeech,
@@ -16,6 +15,7 @@ import type {
   ReportRequest,
   ReportStatus,
 } from '@recallify/contracts';
+import { memoryReport } from '@recallify/contracts';
 import {
   DEFAULT_PARAMS,
   elapsedDays,
@@ -25,21 +25,15 @@ import {
   type FsrsParams,
   type Rating,
 } from '@recallify/fsrs';
-import {
-  MIN_REVIEWS,
-  backtest,
-  evaluate,
-  optimize,
-  type Evaluation,
-  type TrainingReview,
-} from '@recallify/optimizer';
+import { MIN_REVIEWS, evaluate, type TrainingReview } from '@recallify/optimizer';
 import { addDays, startOfDay } from '../common/dates';
+import { OptimizerService, toEvaluation } from '../optimizer/optimizer.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService, type UserScheduling } from '../scheduling/fsrs-config.service';
+import { meanRetrievability } from '../scheduling/recall';
+import { measuredRetention } from '../stats/retention';
 
-/** Same bounds as the optimizer endpoint; the fit is the same work. */
-const MAX_ITERATIONS = 60;
-const MAX_TRAINING_REVIEWS = 20_000;
+/** One report a day, unless the log has grown enough to say something new. */
 const COOLDOWN_HOURS = 24;
 /** Inside the cooldown, this much new history earns a fresh report anyway. */
 const GROWTH_FOR_EARLY_REPORT = 50;
@@ -54,18 +48,8 @@ const LEECH_LAPSES = 3;
 const LEECH_LIMIT = 10;
 
 type Stored = Omit<MemoryReport, 'id' | 'createdAt'>;
-
-function toEvaluation(e: Evaluation): OptimizerEvaluation {
-  return {
-    logLoss: e.logLoss,
-    predictions: e.predictions,
-    predictedRetention: e.predictedRetention,
-    actualRetention: e.actualRetention,
-    calibrationError: e.calibrationError,
-    averageIntervalDays: e.averageIntervalDays,
-    estimatedReviewsPerDay: e.estimatedReviewsPerDay,
-  };
-}
+/** The stored JSON is checked on the way back out, not trusted because we wrote it. */
+const stored = memoryReport.omit({ id: true, createdAt: true });
 
 const pct = (fraction: number): string => `${Math.round(fraction * 100)}%`;
 const days = (n: number): string => {
@@ -86,10 +70,22 @@ export class ReportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scheduling: FsrsConfigService,
+    private readonly optimizer: OptimizerService,
   ) {}
 
-  private toReport(row: { id: string; createdAt: Date; data: Prisma.JsonValue }): MemoryReport {
-    return { id: row.id, createdAt: row.createdAt, ...(row.data as unknown as Stored) };
+  /**
+   * A stored report, or null when the row no longer matches the shape the
+   * contract describes: a deploy that changed it would otherwise turn every
+   * read into a 500. The stored JSON has ISO strings where the contract
+   * has dates, which is exactly what the schema parses.
+   */
+  private toReport(row: { id: string; createdAt: Date; data: Prisma.JsonValue }): MemoryReport | null {
+    const parsed = stored.safeParse(row.data);
+    if (!parsed.success) {
+      this.logger.warn(`report ${row.id} no longer matches the contract and is not shown`);
+      return null;
+    }
+    return { id: row.id, createdAt: row.createdAt, ...parsed.data };
   }
 
   private async latestRow(userId: string) {
@@ -99,13 +95,14 @@ export class ReportService {
     });
   }
 
-  /** The calibration error the latest report measured, for the exam forecast. */
+  /**
+   * How far the latest report found the model this account is scheduled
+   * with to be from right, for the exam forecast to quote beside its range.
+   */
   async latestCalibrationError(userId: string): Promise<number | null> {
     const row = await this.latestRow(userId);
-    if (!row) return null;
-    const model = (row.data as unknown as Stored).model;
-    const evaluation = model.adopted && model.candidate ? model.candidate : model.baseline;
-    return evaluation?.calibrationError ?? null;
+    const report = row ? this.toReport(row) : null;
+    return report?.model.current?.calibrationError ?? null;
   }
 
   async status(userId: string): Promise<ReportStatus> {
@@ -127,6 +124,8 @@ export class ReportService {
     now: Date,
   ): Date | null {
     if (!row) return null;
+    // Growth in either direction: a deck deleted with its history changes
+    // what a report would say just as much as new reviews do.
     if (Math.abs(reviewCount - row.reviewCount) >= GROWTH_FOR_EARLY_REPORT) return null;
     const next = new Date(row.createdAt.getTime() + COOLDOWN_HOURS * 3_600_000);
     return next > now ? next : null;
@@ -134,8 +133,9 @@ export class ReportService {
 
   async get(userId: string, id: string): Promise<MemoryReport> {
     const row = await this.prisma.memoryReport.findFirst({ where: { id, userId } });
-    if (!row) throw new NotFoundException('That report does not exist, or is not yours.');
-    return this.toReport(row);
+    const report = row ? this.toReport(row) : null;
+    if (!report) throw new NotFoundException('That report does not exist, or is not yours.');
+    return report;
   }
 
   async create(userId: string, input: ReportRequest, now = new Date()): Promise<MemoryReport> {
@@ -163,9 +163,9 @@ export class ReportService {
     const [model, patterns, leeches, decks, measured] = await Promise.all([
       this.fit(userId, reviewCount, config),
       this.patterns(userId, input.tzOffsetMinutes, now),
-      this.leeches(userId, config),
+      this.leeches(userId, config, now),
       this.decks(userId, config, now),
-      this.measuredRetention(userId, now),
+      measuredRetention(this.prisma, userId, addDays(startOfDay(now), -WINDOW_DAYS)),
     ]);
 
     const curve = this.curve(model, config);
@@ -197,60 +197,59 @@ export class ReportService {
     this.logger.log(
       `report for ${userId}: ${reviewCount} reviews, fitted=${model.fitted}, ${Date.now() - started}ms`,
     );
-    return this.toReport(row);
+    // Read back from the stored row, not from `data`: Postgres rounds the
+    // last digit of a double on the way into jsonb, and the response should
+    // be what every later read will say.
+    return this.toReport(row) ?? { id: row.id, createdAt: row.createdAt, ...data };
   }
 
   /**
    * The fit, when there is enough history for one. Below the minimum the
    * defaults are still scored on the log, so the calibration figure exists
-   * either way; only the comparison is missing.
+   * either way; only the comparison is missing. `current` scores whatever
+   * this account is actually scheduled with, which may be neither.
    */
   private async fit(
     userId: string,
     reviewCount: number,
     config: UserScheduling,
   ): Promise<ReportModel> {
-    const rows = await this.prisma.review.findMany({
-      where: { userId },
-      orderBy: { reviewedAt: 'asc' },
-      take: MAX_TRAINING_REVIEWS,
-      select: { cardId: true, rating: true, reviewedAt: true },
-    });
-    const reviews: TrainingReview[] = rows.map((r) => ({
-      cardId: r.cardId,
-      rating: r.rating as Rating,
-      reviewedAt: r.reviewedAt,
-    }));
+    const reviews = await this.optimizer.trainingReviews(userId);
+    const scoreCurrent = (reviews: readonly TrainingReview[]) => {
+      const e = evaluate(reviews, config.params, config);
+      return e.predictions > 0 ? toEvaluation(e) : null;
+    };
 
     if (reviewCount < MIN_REVIEWS) {
       const baseline = evaluate(reviews, DEFAULT_PARAMS, config);
+      const scored = baseline.predictions > 0 ? toEvaluation(baseline) : null;
       return {
         fitted: false,
         reviewsUsed: reviews.length,
         params: null,
-        baseline: baseline.predictions > 0 ? toEvaluation(baseline) : null,
+        baseline: scored,
         candidate: null,
+        current: config.usingOptimizedParams ? scoreCurrent(reviews) : scored,
         lossImprovement: null,
         workloadChange: null,
         adopted: false,
       };
     }
 
-    const result = optimize(reviews, {
-      startingParams: DEFAULT_PARAMS,
-      maxIterations: MAX_ITERATIONS,
-      config,
-    });
-    const comparison = backtest(reviews, result.params, DEFAULT_PARAMS, config);
+    const fit = this.optimizer.fit(reviews, config);
+    const adopted = config.usingOptimizedParams && sameParams(config.params, fit.params);
+    const baseline = toEvaluation(fit.baseline);
+    const candidate = toEvaluation(fit.candidate);
     return {
       fitted: true,
       reviewsUsed: reviews.length,
-      params: [...result.params],
-      baseline: toEvaluation(comparison.baseline),
-      candidate: toEvaluation(comparison.candidate),
-      lossImprovement: comparison.lossImprovement,
-      workloadChange: comparison.workloadChange,
-      adopted: config.usingOptimizedParams && sameParams(config.params, result.params),
+      params: [...fit.params],
+      baseline,
+      candidate,
+      current: adopted ? candidate : config.usingOptimizedParams ? scoreCurrent(reviews) : baseline,
+      lossImprovement: fit.lossImprovement,
+      workloadChange: fit.workloadChange,
+      adopted,
     };
   }
 
@@ -320,11 +319,13 @@ export class ReportService {
 
     let bestHour: number | null = null;
     let worstHour: number | null = null;
+    let bestRate = -1;
+    let worstRate = 2;
     hours.forEach((b, hour) => {
-      if (b.attempted < MIN_HOUR_ANSWERS) return;
-      const r = rate(b) as number;
-      if (bestHour === null || r > (rate(hours[bestHour]!) as number)) bestHour = hour;
-      if (worstHour === null || r < (rate(hours[worstHour]!) as number)) worstHour = hour;
+      const r = rate(b);
+      if (b.attempted < MIN_HOUR_ANSWERS || r === null) return;
+      if (r > bestRate) [bestHour, bestRate] = [hour, r];
+      if (r < worstRate) [worstHour, worstRate] = [hour, r];
     });
 
     return {
@@ -336,8 +337,13 @@ export class ReportService {
     };
   }
 
-  /** Cards forgotten again and again, ranked by lapses and then by the time they have taken. */
-  private async leeches(userId: string, config: UserScheduling): Promise<ReportLeech[]> {
+  /**
+   * Cards forgotten again and again, ranked by lapses and then by the time
+   * they have taken. Suspended cards and archived decks are left out: the
+   * report tells the reader to suspend a leech, so one already suspended is
+   * dealt with.
+   */
+  private async leeches(userId: string, config: UserScheduling, now: Date): Promise<ReportLeech[]> {
     const rows = await this.prisma.$queryRaw<
       {
         id: string;
@@ -363,11 +369,11 @@ export class ReportService {
       JOIN "decks" d ON d."id" = c."deckId"
       LEFT JOIN "reviews" r ON r."cardId" = c."id"
       WHERE c."userId" = ${userId} AND c."lapses" >= ${LEECH_LAPSES}
+        AND c."suspendedAt" IS NULL AND d."archivedAt" IS NULL
       GROUP BY c."id", d."title"
       ORDER BY c."lapses" DESC, ms DESC
       LIMIT ${LEECH_LIMIT}
     `;
-    const now = new Date();
     return rows.map((r) => ({
       cardId: r.id,
       deckId: r.deckId,
@@ -410,50 +416,30 @@ export class ReportService {
     ]);
 
     const byDeck = new Map(reviews.map((r) => [r.deckId, r]));
+    const cardsByDeck = new Map<string, typeof cards>();
+    for (const card of cards) {
+      const list = cardsByDeck.get(card.deckId);
+      if (list) list.push(card);
+      else cardsByDeck.set(card.deckId, [card]);
+    }
     return decks
       .map((deck) => {
-        const mine = cards.filter((c) => c.deckId === deck.id);
-        const seen = mine.filter((c) => c.lastReviewedAt !== null);
-        const predicted =
-          seen.length > 0
-            ? seen.reduce(
-                (sum, c) =>
-                  sum +
-                  retrievability(
-                    config.params,
-                    elapsedDays(c.lastReviewedAt as Date, now),
-                    c.stability,
-                  ),
-                0,
-              ) / seen.length
-            : null;
+        const mine = cardsByDeck.get(deck.id) ?? [];
         const r = byDeck.get(deck.id);
         const count = r ? Number(r.reviews) : 0;
         const attempted = r ? Number(r.attempted) : 0;
+        const recalled = r ? Number(r.recalled) : 0;
         return {
           deckId: deck.id,
           title: deck.title,
           cards: mine.length,
           reviews: count,
           reviewsPerCard: mine.length > 0 ? count / mine.length : 0,
-          retention: attempted > 0 ? Number(r!.recalled) / attempted : null,
-          predictedRetention: predicted,
+          retention: attempted > 0 ? recalled / attempted : null,
+          predictedRetention: meanRetrievability(config.params, mine, now),
         };
       })
       .filter((d) => d.cards > 0);
-  }
-
-  private async measuredRetention(
-    userId: string,
-    now: Date,
-  ): Promise<{ attempted: number; retention: number | null }> {
-    const from = addDays(startOfDay(now), -WINDOW_DAYS);
-    const where = { userId, reviewedAt: { gte: from }, prevState: { not: 'NEW' as const } };
-    const [attempted, recalled] = await Promise.all([
-      this.prisma.review.count({ where }),
-      this.prisma.review.count({ where: { ...where, rating: { gt: 1 } } }),
-    ]);
-    return { attempted, retention: attempted > 0 ? recalled / attempted : null };
   }
 
   /**

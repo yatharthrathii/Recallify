@@ -6,7 +6,10 @@
  * one would be a third reader here and nothing else.
  */
 
-export type ImportRating = 1 | 2 | 3 | 4;
+import type { Rating } from '@recallify/fsrs';
+
+/** The scheduler's own rating scale; the reader maps a source's ease onto it. */
+export type ImportRating = Rating;
 
 export interface ImportReview {
   /**

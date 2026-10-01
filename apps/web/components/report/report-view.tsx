@@ -11,6 +11,7 @@ import { PageShell, Section } from '@/components/shell/app-shell';
 import { Button, LinkButton } from '@/components/ui/button';
 import { Badge, EmptyState, ErrorState, Recall, Skeleton, messageOf } from '@/components/ui/misc';
 import { cn } from '@/lib/cn';
+import { FitTable } from '@/components/stats/fit-table';
 import { CompareCurves } from './compare-curves';
 import { PatternBars } from './pattern-bars';
 
@@ -167,39 +168,7 @@ function ReportBody({ report, nextAllowedAt }: { report: MemoryReport; nextAllow
       >
         {model.fitted && model.baseline && model.candidate ? (
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-            <table className="w-full text-ui">
-              <thead>
-                <tr className="border-b border-line text-left">
-                  <th className="eyebrow py-2 pr-3 font-medium">Measure</th>
-                  <th className="eyebrow px-3 py-2 text-right font-medium">Defaults</th>
-                  <th className="eyebrow py-2 pl-3 text-right font-medium">Fitted</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                <Row
-                  label="Prediction error (log loss)"
-                  note="Lower is better. 0.693 is a coin flip."
-                  before={model.baseline.logLoss.toFixed(4)}
-                  after={model.candidate.logLoss.toFixed(4)}
-                />
-                <Row
-                  label="Calibration error"
-                  note="Gap between predicted and actual recall."
-                  before={formatPercent(model.baseline.calibrationError)}
-                  after={formatPercent(model.candidate.calibrationError)}
-                />
-                <Row
-                  label="Mean interval"
-                  before={`${model.baseline.averageIntervalDays.toFixed(1)}d`}
-                  after={`${model.candidate.averageIntervalDays.toFixed(1)}d`}
-                />
-                <Row
-                  label="Estimated reviews a day"
-                  before={model.baseline.estimatedReviewsPerDay.toFixed(1)}
-                  after={model.candidate.estimatedReviewsPerDay.toFixed(1)}
-                />
-              </tbody>
-            </table>
+            <FitTable baseline={model.baseline} candidate={model.candidate} />
             <div className="self-start rounded-lg border border-line bg-surface px-5 py-4">
               <p className="text-ui text-ink">
                 Predicts your recall{' '}
@@ -313,7 +282,7 @@ function ReportBody({ report, nextAllowedAt }: { report: MemoryReport; nextAllow
                       <Link href={`/decks/${leech.deckId}`} className="underline-offset-4 hover:underline">
                         {leech.deckTitle}
                       </Link>
-                      {leech.lastRating ? ` , last answer ${RATING_NAME[leech.lastRating]}` : ''}
+                      {leech.lastRating ? `, last answer ${RATING_NAME[leech.lastRating]}` : ''}
                     </p>
                     <p className="tabular mt-0.5 text-caption text-ink-muted md:hidden">
                       {leech.lapses} lapses, {leech.reviews} reviews, {Math.round(leech.minutesSpent)} min
@@ -388,28 +357,5 @@ function ReportBody({ report, nextAllowedAt }: { report: MemoryReport; nextAllow
         </p>
       </Section>
     </div>
-  );
-}
-
-function Row({
-  label,
-  note,
-  before,
-  after,
-}: {
-  label: string;
-  note?: string;
-  before: string;
-  after: string;
-}) {
-  return (
-    <tr>
-      <td className="py-3 pr-3">
-        <span className="text-ink">{label}</span>
-        {note ? <span className="block text-caption text-ink-faint">{note}</span> : null}
-      </td>
-      <td className="tabular px-3 py-3 text-right text-ink-muted">{before}</td>
-      <td className="tabular py-3 pl-3 text-right text-ink">{after}</td>
-    </tr>
   );
 }

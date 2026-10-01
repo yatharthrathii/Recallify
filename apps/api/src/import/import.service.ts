@@ -1,23 +1,18 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { ImportCard, ImportRequest, ImportResponse } from '@recallify/contracts';
-import { DAY_MS, newCard, schedule, type FsrsConfig, type Rating } from '@recallify/fsrs';
+import { newCard, schedule, type FsrsConfig } from '@recallify/fsrs';
+import { newCardId, reviewIdFor } from '../common/ids';
 import { DecksService } from '../decks/decks.service';
+import { LibraryService } from '../library/library.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService } from '../scheduling/fsrs-config.service';
+import { MAX_CLOCK_SKEW_MS, reviewLogColumns } from '../scheduling/review-row';
 import { StatsService } from '../stats/stats.service';
 
-/** Same allowance as a live review: a device clock a little ahead is not a lie. */
-const MAX_CLOCK_SKEW_MS = 5 * 60_000;
-
-/** Rows per INSERT. Under Postgres's parameter limit with room to spare. */
-const INSERT_BATCH = 2000;
-
-type ReviewRow = Omit<Prisma.ReviewCreateManyInput, 'cardId'>;
-
 interface ReplayedCard {
-  readonly card: Prisma.CardCreateManyInput;
-  readonly reviews: readonly ReviewRow[];
+  readonly card: Prisma.CardCreateManyInput & { id: string };
+  readonly reviews: readonly Prisma.ReviewCreateManyInput[];
 }
 
 /**
@@ -26,7 +21,8 @@ interface ReplayedCard {
  * The result is what the card would look like had every one of those answers
  * been given here: a review row per answer, carrying the before and after
  * state so the log stays replayable, and the card row with the final state.
- * Fuzz is off (random 0.5), so an import is reproducible.
+ * Fuzz is off (random 0.5), so an import is reproducible. The card's id is
+ * made here so its reviews can name it before anything is written.
  */
 function replayCard(
   userId: string,
@@ -35,6 +31,7 @@ function replayCard(
   config: FsrsConfig,
   now: Date,
 ): ReplayedCard {
+  const cardId = newCardId();
   const ceiling = new Date(now.getTime() + MAX_CLOCK_SKEW_MS);
   const ordered = [...input.reviews].sort(
     (a, b) => a.reviewedAt.getTime() - b.reviewedAt.getTime(),
@@ -44,7 +41,7 @@ function replayCard(
   const createdAt = first ? new Date(Math.min(first.reviewedAt.getTime(), now.getTime())) : now;
   let card = newCard(createdAt);
   let last: Date | null = null;
-  const reviews: ReviewRow[] = [];
+  const reviews: Prisma.ReviewCreateManyInput[] = [];
 
   for (const review of ordered) {
     // Never in the future, never before the previous answer.
@@ -52,19 +49,13 @@ function replayCard(
     if (last && at < last) at = last;
     last = at;
 
-    const { card: after, log } = schedule(card, review.rating as Rating, at, config, 0.5);
+    const { card: after, log } = schedule(card, review.rating, at, config, 0.5);
     reviews.push({
-      id: review.id,
+      id: reviewIdFor(userId, review.id),
+      cardId,
       userId,
       rating: review.rating,
-      prevState: log.prevState,
-      prevStability: log.prevStability,
-      prevDifficulty: log.prevDifficulty,
-      newStability: log.newStability,
-      newDifficulty: log.newDifficulty,
-      scheduledDays: Math.max(0, Math.round((after.dueAt.getTime() - at.getTime()) / DAY_MS)),
-      elapsedDays: Math.round(log.elapsedDays),
-      retrievability: log.retrievability,
+      ...reviewLogColumns(log, after, at),
       durationMs: review.durationMs ?? null,
       reviewedAt: at,
       syncedAt: now,
@@ -74,11 +65,12 @@ function replayCard(
 
   return {
     card: {
+      id: cardId,
       userId,
       deckId,
       front: input.front,
       back: input.back,
-      hint: input.hint ?? null,
+      hint: input.hint || null,
       source: 'IMPORT',
       state: card.state,
       stability: card.stability,
@@ -90,6 +82,7 @@ function replayCard(
       learningStep: card.learningStep,
       suspendedAt: input.suspended ? now : null,
       createdAt,
+      textUpdatedAt: createdAt,
     },
     reviews,
   };
@@ -104,44 +97,50 @@ export class ImportService {
     private readonly decks: DecksService,
     private readonly scheduling: FsrsConfigService,
     private readonly stats: StatsService,
+    private readonly library: LibraryService,
   ) {}
 
   /**
    * One request of an import, as one transaction: the deck if it is new, the
-   * cards, their reviews, and the stats they earn, or none of it.
+   * cards, their reviews, the stats they earn and the changelog line, or none
+   * of it.
    *
    * A review id that already exists fails the whole request with 409. The ids
-   * are derived from the source file, so this is what "you imported this
-   * already" looks like, and stopping is right: the alternative is a person's
-   * history counted twice.
+   * are derived from the source file and this account, so this is what "you
+   * imported this already" looks like, and stopping is right: the alternative
+   * is a person's history counted twice. Another account importing the same
+   * file gets its own ids and is not affected.
    */
   async importCards(userId: string, input: ImportRequest, now = new Date()): Promise<ImportResponse> {
     if (input.deckId) await this.decks.assertOwned(userId, input.deckId);
+    else if (!input.newDeck) throw new BadRequestException('Provide either deckId or newDeck.');
+    const newDeck = input.newDeck;
     const config = await this.scheduling.forUser(userId);
 
     try {
       return await this.prisma.$transaction(
         async (tx) => {
-          const deckId = input.deckId ?? (await this.decks.create(userId, input.newDeck!, tx)).id;
+          const deckId = input.deckId ?? (await this.decks.create(userId, newDeck!, tx)).id;
           const replayed = input.cards.map((card) => replayCard(userId, deckId, card, config, now));
 
-          const created = await tx.card.createManyAndReturn({
-            data: replayed.map((r) => r.card),
-            select: { id: true },
-          });
-
-          const rows: Prisma.ReviewCreateManyInput[] = replayed.flatMap((r, i) =>
-            r.reviews.map((review) => ({ ...review, cardId: created[i]!.id })),
-          );
-          for (let at = 0; at < rows.length; at += INSERT_BATCH) {
-            await tx.review.createMany({ data: rows.slice(at, at + INSERT_BATCH) });
+          await tx.card.createMany({ data: replayed.map((r) => r.card) });
+          // Prisma splits a large createMany by the bind-parameter limit itself.
+          const rows = replayed.flatMap((r) => r.reviews);
+          if (rows.length > 0) {
+            await tx.review.createMany({ data: rows });
+            await this.stats.absorbHistory(tx, userId, rows.length, now);
           }
-          if (rows.length > 0) await this.stats.absorbHistory(tx, userId, rows.length, now);
+          if (input.deckId) {
+            await this.library.recordCardChange(
+              { deckId, kind: 'ADDED', cardId: null, summary: `${replayed.length} cards added` },
+              tx,
+            );
+          }
 
           this.logger.log(
-            `imported ${created.length} cards and ${rows.length} reviews for ${userId}`,
+            `imported ${replayed.length} cards and ${rows.length} reviews for ${userId}`,
           );
-          return { deckId, cardsCreated: created.length, reviewsCreated: rows.length };
+          return { deckId, cardsCreated: replayed.length, reviewsCreated: rows.length };
         },
         // Several thousand rows on a database that may be waking up.
         { maxWait: 10_000, timeout: 60_000 },

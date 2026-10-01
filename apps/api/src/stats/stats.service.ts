@@ -16,6 +16,7 @@ import type {
 import { elapsedDays, intervalFromRetention, retrievability, schedule } from '@recallify/fsrs';
 import { ReportService } from '../report/report.service';
 import { addDays, dayKey, daysBetween, startOfDay } from '../common/dates';
+import { measuredRetention } from './retention';
 import { streaks } from './streaks';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService, type UserScheduling } from '../scheduling/fsrs-config.service';
@@ -179,20 +180,14 @@ export class StatsService {
     // asked to recall, how many did they. First-ever reviews are excluded --
     // there was nothing to recall yet, and counting them would drag the number
     // toward whatever fraction of the user's study happens to be new cards.
-    const attemptedWhere = {
-      userId,
-      reviewedAt: { gte: windowStart },
-      prevState: { not: 'NEW' as const },
-    };
-
-    const [stats, totalReviews, totalCards, dueToday, attempted, recalled] = await Promise.all([
+    const [stats, totalReviews, totalCards, dueToday, measured] = await Promise.all([
       this.prisma.userStats.findUnique({ where: { userId } }),
       this.prisma.review.count({ where: { userId } }),
       this.prisma.card.count({ where: { userId } }),
       this.prisma.card.count({ where: { userId, suspendedAt: null, dueAt: { lte: now } } }),
-      this.prisma.review.count({ where: attemptedWhere }),
-      this.prisma.review.count({ where: { ...attemptedWhere, rating: { gt: 1 } } }),
+      measuredRetention(this.prisma, userId, windowStart),
     ]);
+    const { attempted, recalled } = measured;
 
     return {
       xp: stats?.xp ?? 0,
@@ -243,8 +238,15 @@ export class StatsService {
     });
   }
 
+  /** Ownership as part of the answer: not-yours and not-there read the same. */
+  private async assertDeckOwned(userId: string, deckId: string): Promise<void> {
+    const deck = await this.prisma.deck.findFirst({ where: { id: deckId, userId }, select: { id: true } });
+    if (!deck) throw new NotFoundException('That deck does not exist, or is not yours.');
+  }
+
   /** What the next N days look like if nothing new is added. */
   async forecast(userId: string, query: ForecastQuery): Promise<Forecast> {
+    if (query.deckId) await this.assertDeckOwned(userId, query.deckId);
     const today = startOfDay(new Date());
     const end = addDays(today, query.days);
 
@@ -331,6 +333,8 @@ export class StatsService {
     const daysAway = daysBetween(now, examAt);
     if (daysAway < 0) throw new BadRequestException('The date has already passed.');
 
+    // Scheduling columns only: the text of every card is fetched afterwards
+    // for the thirty that are listed, not for the thousands that are counted.
     const [config, calibrationError, decks, cards] = await Promise.all([
       this.scheduling.forUser(userId),
       this.reports.latestCalibrationError(userId),
@@ -344,7 +348,6 @@ export class StatsService {
         select: {
           id: true,
           deckId: true,
-          front: true,
           state: true,
           stability: true,
           difficulty: true,
@@ -370,7 +373,7 @@ export class StatsService {
     let expected = 0;
     let variance = 0;
     const histogram = Array.from({ length: 10 }, () => 0);
-    const projected: (ExamCard & { gain: number })[] = [];
+    const projected: (Omit<ExamCard, 'front'> & { gain: number })[] = [];
 
     for (const card of seen) {
       const elapsedAtExam = elapsedDays(card.lastReviewedAt, now) + daysNowToExam;
@@ -386,18 +389,29 @@ export class StatsService {
         cardId: card.id,
         deckId: card.deckId,
         deckTitle: titles.get(card.deckId) ?? '',
-        front: card.front,
         retrievability: r,
         gain: Math.max(0, lifted - r),
       });
     }
 
     const sd = Math.sqrt(variance);
-    const atRisk = [...projected]
-      .sort((a, b) => a.retrievability - b.retrievability)
-      .slice(0, 20)
-      .map(({ gain: _gain, ...card }) => card);
-    const bestMoves = [...projected].sort((a, b) => b.gain - a.gain).slice(0, 10);
+    const weakest = [...projected].sort((a, b) => a.retrievability - b.retrievability).slice(0, 20);
+    const strongestMoves = [...projected].sort((a, b) => b.gain - a.gain).slice(0, 10);
+    const listed = [...new Set([...weakest, ...strongestMoves].map((c) => c.cardId))];
+    const fronts = new Map(
+      (
+        await this.prisma.card.findMany({
+          where: { id: { in: listed }, userId },
+          select: { id: true, front: true },
+        })
+      ).map((c) => [c.id, c.front]),
+    );
+    const withFront = ({ gain: _gain, ...card }: (typeof projected)[number]): ExamCard => ({
+      ...card,
+      front: fronts.get(card.cardId) ?? '',
+    });
+    const atRisk = weakest.map(withFront);
+    const bestMoves = strongestMoves.map((c) => ({ ...withFront(c), gain: c.gain }));
 
     return {
       date: query.date,
@@ -519,11 +533,7 @@ export class StatsService {
     deckId: string,
     config: UserScheduling,
   ): Promise<ForgettingCurve> {
-    const deck = await this.prisma.deck.findFirst({
-      where: { id: deckId, userId },
-      select: { id: true },
-    });
-    if (!deck) throw new NotFoundException('That deck does not exist, or is not yours.');
+    await this.assertDeckOwned(userId, deckId);
 
     const cards = await this.prisma.card.findMany({
       where: { deckId, userId, suspendedAt: null, state: { not: 'NEW' } },

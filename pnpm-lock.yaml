@@ -309,6 +309,12 @@ importers:
 
   packages/import:
     dependencies:
+      '@recallify/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@recallify/fsrs':
+        specifier: workspace:*
+        version: link:../fsrs
       '@types/sql.js':
         specifier: ^1.4.9
         version: 1.4.11

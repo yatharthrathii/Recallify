@@ -2,26 +2,26 @@
 
 import { formatCount, formatPercent } from '@recallify/core';
 import { useDecks, useExam } from '@recallify/core/react';
-import { memoryLevel, type MemoryLevel } from '@recallify/tokens';
+import { memoryLevel } from '@recallify/tokens';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CountUp } from '@/components/motion';
 import { Section } from '@/components/shell/app-shell';
 import { SelectField, TextField } from '@/components/ui/field';
-import { ErrorState, Recall, Skeleton } from '@/components/ui/misc';
+import { ErrorState, LEVEL_BG_CLASS, Recall, Skeleton } from '@/components/ui/misc';
 import { cn } from '@/lib/cn';
 
-const DAY = 86_400_000;
-const LEVEL_BG: Record<MemoryLevel, string> = {
-  strong: 'bg-mem-strong',
-  good: 'bg-mem-good',
-  fading: 'bg-mem-fading',
-  weak: 'bg-mem-weak',
-  lost: 'bg-mem-lost',
-};
 
-function isoDay(offsetDays: number): string {
-  return new Date(Date.now() + offsetDays * DAY).toISOString().slice(0, 10);
+/**
+ * A calendar day as the date input wants it, in the person's own zone: the
+ * floor is their today, not UTC's, which differs from it every evening west
+ * of Greenwich and every early morning east of it.
+ */
+function localDay(offsetDays: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 /**
@@ -33,12 +33,13 @@ function isoDay(offsetDays: number): string {
  * measured it, how far the model has been from right about this person.
  */
 export function ExamDay() {
-  const [date, setDate] = useState(() => isoDay(30));
+  const [date, setDate] = useState(() => localDay(30));
   const [deckId, setDeckId] = useState('');
   const decks = useDecks();
-  const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= isoDay(0);
+  const valid = /^\d{4}-\d{2}-\d{2}$/.test(date) && date >= localDay(0);
   const exam = useExam(valid ? date : null, deckId || undefined);
   const e = exam.data;
+  const peak = Math.max(1, ...(e?.histogram ?? [1]));
 
   return (
     <Section title="Exam day" className="mb-10">
@@ -54,7 +55,7 @@ export function ExamDay() {
             <TextField
               label="Date"
               type="date"
-              min={isoDay(0)}
+              min={localDay(0)}
               value={date}
               onChange={(event) => setDate(event.target.value)}
               error={valid ? undefined : 'Choose today or a later date.'}
@@ -122,20 +123,20 @@ export function ExamDay() {
                       : ''}
                   </p>
 
+                  {/* The tallest band sets the scale. */}
                   <div
                     role="img"
-                    aria-label={`Cards by predicted recall on the date, from 0 to 100% in ten bands.`}
+                    aria-label="Cards by predicted recall on the date, from 0 to 100% in ten bands."
                     className="mt-5 flex h-16 items-end gap-0.75"
                   >
                     {e.histogram.map((count, i) => {
-                      const peak = Math.max(1, ...e.histogram);
                       return (
                         <div
                           key={i}
                           title={`${i * 10} to ${(i + 1) * 10}%: ${count} cards`}
                           className={cn(
                             'flex-1 rounded-t-[3px]',
-                            count === 0 ? 'bg-line-strong' : LEVEL_BG[memoryLevel((i + 0.5) / 10)],
+                            count === 0 ? 'bg-line-strong' : LEVEL_BG_CLASS[memoryLevel((i + 0.5) / 10)],
                           )}
                           style={{ height: `${Math.max(count > 0 ? 6 : 2, (count / peak) * 100)}%` }}
                         />
@@ -180,7 +181,7 @@ function CardList<T extends { cardId: string; deckId: string; deckTitle: string;
 }: {
   title: string;
   cards: readonly T[];
-  render: (card: T) => React.ReactNode;
+  render: (card: T) => ReactNode;
 }) {
   return (
     <div>

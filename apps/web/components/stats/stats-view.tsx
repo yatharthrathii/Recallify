@@ -20,6 +20,7 @@ import { Heatmap } from '@/components/charts/heatmap';
 import { CountUp, FillBar } from '@/components/motion';
 import { PageShell, Section } from '@/components/shell/app-shell';
 import { ExamDay } from '@/components/stats/exam-day';
+import { FitTable } from '@/components/stats/fit-table';
 import { Button, LinkButton } from '@/components/ui/button';
 import {
   ErrorState,
@@ -278,39 +279,7 @@ function MemoryModel() {
                 {result.converged ? '' : ', stopped at the step limit'}.
               </p>
             </div>
-            <table className="w-full text-ui">
-              <thead>
-                <tr className="border-b border-line text-left">
-                  <th className="eyebrow px-5 py-2 font-medium">Measure</th>
-                  <th className="eyebrow px-3 py-2 text-right font-medium">Defaults</th>
-                  <th className="eyebrow px-5 py-2 text-right font-medium">Fitted</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                <Row
-                  label="Prediction error (log loss)"
-                  note="Lower is better. 0.693 is a coin flip."
-                  before={result.baseline.logLoss.toFixed(4)}
-                  after={result.candidate.logLoss.toFixed(4)}
-                />
-                <Row
-                  label="Calibration error"
-                  note="Gap between predicted and actual recall."
-                  before={formatPercent(result.baseline.calibrationError)}
-                  after={formatPercent(result.candidate.calibrationError)}
-                />
-                <Row
-                  label="Mean interval"
-                  before={`${result.baseline.averageIntervalDays.toFixed(1)}d`}
-                  after={`${result.candidate.averageIntervalDays.toFixed(1)}d`}
-                />
-                <Row
-                  label="Estimated reviews a day"
-                  before={result.baseline.estimatedReviewsPerDay.toFixed(1)}
-                  after={result.candidate.estimatedReviewsPerDay.toFixed(1)}
-                />
-              </tbody>
-            </table>
+            <FitTable baseline={result.baseline} candidate={result.candidate} inset />
             <div className="border-t border-line px-5 py-4">
               <p className="text-ui text-ink">
                 Predicts your recall{' '}
@@ -359,28 +328,5 @@ function MemoryModel() {
         )}
       </div>
     </Section>
-  );
-}
-
-function Row({
-  label,
-  note,
-  before,
-  after,
-}: {
-  label: string;
-  note?: string;
-  before: string;
-  after: string;
-}) {
-  return (
-    <tr>
-      <td className="px-5 py-3">
-        <span className="text-ink">{label}</span>
-        {note ? <span className="block text-caption text-ink-faint">{note}</span> : null}
-      </td>
-      <td className="tabular px-3 py-3 text-right text-ink-muted">{before}</td>
-      <td className="tabular px-5 py-3 text-right text-ink">{after}</td>
-    </tr>
   );
 }

@@ -12,7 +12,7 @@ import {
   type ImportPreview,
 } from '@recallify/import';
 import { ArrowRight, FileUp } from 'lucide-react';
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { FillBar, Stagger, StaggerItem } from '@/components/motion';
 import { PageShell, Section } from '@/components/shell/app-shell';
 import { Button, LinkButton, Spinner } from '@/components/ui/button';
@@ -74,6 +74,16 @@ export function ImportView() {
   const previewRef = useRef<ImportPreview | null>(null);
   const importCards = useImportCards();
 
+  // Leaving mid-import would strand a deck half sent. The browser asks first.
+  useEffect(() => {
+    if (phase.kind !== 'importing') return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [phase.kind]);
+
   const pick = async (file: File | undefined) => {
     if (!file) return;
     setPhase({ kind: 'reading', name: file.name });
@@ -95,10 +105,7 @@ export function ImportView() {
     } catch (error) {
       setPhase({
         kind: 'pick',
-        error:
-          error instanceof ImportError || error instanceof Error
-            ? error.message
-            : 'That file could not be read.',
+        error: error instanceof Error ? error.message : 'That file could not be read.',
       });
     }
   };
@@ -156,24 +163,32 @@ export function ImportView() {
       try {
         for (let c = from; c < chunks.length; c += 1) {
           const chunk = chunks[c]!;
-          const result = await importCards.mutateAsync({
-            ...(deckId
-              ? { deckId }
-              : { newDeck: { title: nameOf(deck, index), color: COLORS[index % COLORS.length]! } }),
-            cards: chunk.cards.map((card) => ({
-              front: card.front,
-              back: card.back,
-              ...(card.hint ? { hint: card.hint } : {}),
-              suspended: card.suspended,
-              reviews: card.reviews.map((r) => ({
-                id: r.id,
-                rating: r.rating,
-                reviewedAt: new Date(r.reviewedAt).toISOString(),
-                ...(r.durationMs ? { durationMs: r.durationMs } : {}),
+          try {
+            const result = await importCards.mutateAsync({
+              ...(deckId
+                ? { deckId }
+                : { newDeck: { title: nameOf(deck, index), color: COLORS[index % COLORS.length]! } }),
+              cards: chunk.cards.map((card) => ({
+                front: card.front,
+                back: card.back,
+                ...(card.hint ? { hint: card.hint } : {}),
+                suspended: card.suspended,
+                reviews: card.reviews.map((r) => ({
+                  id: r.id,
+                  rating: r.rating,
+                  reviewedAt: new Date(r.reviewedAt).toISOString(),
+                  ...(r.durationMs ? { durationMs: r.durationMs } : {}),
+                })),
               })),
-            })),
-          });
-          deckId = result.deckId;
+            });
+            deckId = result.deckId;
+          } catch (error) {
+            // Each part is one transaction on the server, so 409 means this
+            // part is already stored in full: a reply that was lost, or a
+            // resend. It counts as sent and the next part goes. Only a first
+            // part that is refused means the whole deck was imported before.
+            if (!(error instanceof ApiError && error.status === 409) || !deckId) throw error;
+          }
           sent += chunk.cards.length;
           update(i, { deckId, sent });
         }
@@ -251,6 +266,7 @@ export function ImportView() {
               type="file"
               accept={ACCEPT}
               className="sr-only"
+              tabIndex={-1}
               aria-label="File to import"
               onChange={(e) => {
                 void pick(e.target.files?.[0]);

@@ -311,7 +311,7 @@ function readCollection(db: Database): ImportPreview {
     const card: ImportCard = {
       front: frontText.text.slice(0, CARD_TEXT_MAX),
       back: backText.text.slice(0, CARD_TEXT_MAX),
-      ...(front.hint ? { hint: (front.hint as string).slice(0, HINT_MAX) } : {}),
+      ...(front.hint ? { hint: front.hint.slice(0, HINT_MAX) } : {}),
       suspended: queue === -1,
       reviews,
     };

@@ -159,7 +159,7 @@ export function CompareCurves({ yours, population, yoursLabel, height = 220, cla
         <div style={{ height }} />
       )}
 
-      <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1 text-caption text-ink-muted" aria-live="polite">
+      <div className="mt-1 flex flex-wrap items-center gap-x-5 gap-y-1 text-caption text-ink-muted">
         <span className="inline-flex items-center gap-2">
           <span aria-hidden className="h-0.5 w-5 rounded-full bg-accent" />
           {yoursLabel}

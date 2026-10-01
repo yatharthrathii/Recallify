@@ -87,6 +87,8 @@ describe('report and exam', () => {
     expect(report.model.reviewsUsed).toBe(510);
     expect(report.model.candidate.predictions).toBeGreaterThan(400);
     expect(report.model.adopted).toBe(false);
+    // Not adopted and no earlier fit in use: the account runs on the defaults.
+    expect(report.model.current).toEqual(report.model.baseline);
 
     // The curve starts at certainty and falls; a stability is the day it reaches 90%.
     expect(report.curve.source).toBe('fitted');
@@ -110,6 +112,12 @@ describe('report and exam', () => {
     expect(report.leeches[0].minutesSpent).toBeGreaterThan(0);
     expect(report.leeches[0].deckTitle).toBe('Heavy deck');
     expect([1, 2, 3, 4]).toContain(report.leeches[0].lastRating);
+    // A card already suspended is dealt with, so it is not listed.
+    const listed = await h.prisma.card.findMany({
+      where: { id: { in: report.leeches.map((l: { cardId: string }) => l.cardId) } },
+      select: { suspendedAt: true },
+    });
+    expect(listed.every((c) => c.suspendedAt === null)).toBe(true);
 
     const titles = report.decks.map((d: { title: string }) => d.title);
     expect(titles).toEqual(['Heavy deck', 'Light deck']);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chunkDeck } from '../src/chunk';
+import { chunkDeck, estimateCardBytes } from '../src/chunk';
 import { NoteTally } from '../src/notes';
 import { protoString, protoVarint, readFields } from '../src/protobuf';
 import type { ImportCard, ImportDeck } from '../src/types';
@@ -35,6 +35,16 @@ describe('chunkDeck', () => {
       [2, 4],
       [1, 10],
     ]);
+  });
+
+  it('closes a chunk on the byte budget, and a card over it travels alone', () => {
+    const long = { ...card(0), front: 'x'.repeat(1000), back: 'y'.repeat(1000), hint: 'h'.repeat(100) };
+    const size = estimateCardBytes(long);
+    expect(size).toBeGreaterThan(6000);
+    const chunks = chunkDeck(deck([long, long, long]), { bytes: size * 2 });
+    expect(chunks.map((c) => c.cards.length)).toEqual([2, 1]);
+    const huge = { ...card(0), front: 'x'.repeat(4000), back: 'y'.repeat(4000) };
+    expect(chunkDeck(deck([huge, card(0)]), { bytes: 100 }).map((c) => c.cards.length)).toEqual([1, 1]);
   });
 
   it('returns nothing for an empty deck and uses the defaults', () => {

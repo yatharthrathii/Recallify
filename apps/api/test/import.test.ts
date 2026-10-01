@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { reviewIdFor } from '../src/common/ids';
 import { API, auth, deleteUsers, registerUser, startHarness, type Harness, type TestUser } from './harness';
 
 const DAY = 86_400_000;
@@ -139,6 +140,35 @@ describe('import', () => {
     expect(await h.prisma.card.count({ where: { front: 'Question 10', userId: user.id } })).toBe(0);
   });
 
+  it('lets another account import the same file, and refuses one id twice in a request', async () => {
+    const now = new Date();
+    const card = cardWithHistory(21, now);
+    await h
+      .http()
+      .post(`${API}/import`)
+      .set(auth(user))
+      .send({ newDeck: { title: 'Shared' }, cards: [card] })
+      .expect(201);
+    // The same reviews, the same ids, a different person: their own copy.
+    await h
+      .http()
+      .post(`${API}/import`)
+      .set(auth(stranger))
+      .send({ newDeck: { title: 'Shared' }, cards: [card] })
+      .expect(201);
+    expect(await h.prisma.card.count({ where: { front: 'Question 21' } })).toBe(2);
+
+    const twice = cardWithHistory(22, now);
+    const duplicated = { ...twice, reviews: [...twice.reviews, twice.reviews[0]!] };
+    const res = await h
+      .http()
+      .post(`${API}/import`)
+      .set(auth(user))
+      .send({ newDeck: { title: 'Broken' }, cards: [duplicated] })
+      .expect(400);
+    expect(res.body.errors).toHaveProperty('cards');
+  });
+
   it('clamps a review from the future to now and keeps answers in order', async () => {
     const now = new Date();
     const ids = [randomUUID(), randomUUID(), randomUUID()];
@@ -163,11 +193,14 @@ describe('import', () => {
       })
       .expect(201);
 
+    // Stored under ids that fold the account in, so another account's import
+    // of the same file cannot collide with this one.
+    const stored = ids.map((id) => reviewIdFor(user.id, id));
     const log = await h.prisma.review.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: stored } },
       orderBy: { reviewedAt: 'asc' },
     });
-    expect(log.map((r) => r.id)).toEqual([ids[2], ids[1], ids[0]]);
+    expect(log.map((r) => r.id)).toEqual([stored[2], stored[1], stored[0]]);
     expect(log[2]!.reviewedAt.getTime()).toBeLessThanOrEqual(Date.now());
     const card = await h.prisma.card.findFirst({ where: { deckId: res.body.deckId } });
     expect(card!.reps).toBe(3);

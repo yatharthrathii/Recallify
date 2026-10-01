@@ -18,6 +18,8 @@
     "build": "tsc -p tsconfig.build.json"
   },
   "dependencies": {
+    "@recallify/contracts": "workspace:*",
+    "@recallify/fsrs": "workspace:*",
     "@types/sql.js": "^1.4.9",
     "fflate": "^0.8.2",
     "fzstd": "^0.1.1"

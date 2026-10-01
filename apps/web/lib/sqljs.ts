@@ -12,7 +12,7 @@ let loading: Promise<SqlJsStatic> | null = null;
 /**
  * The SQLite engine, loaded only when the import page needs it.
  *
- * Fetched as two static files from public/vendor (see scripts/copy-sqljs.mjs)
+ * Fetched as two static files from public/vendor (copied there by next.config.ts)
  * rather than imported: the loader is written to run under Node, a worker and
  * a browser at once, and a bundler that tries to follow every branch of it
  * ends up shipping polyfills for the ones that do not apply. A script tag

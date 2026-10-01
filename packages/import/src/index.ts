@@ -15,7 +15,7 @@ export type * from './types';
 export type { SqlJsStatic } from 'sql.js';
 export { parseApkg, ImportError, reviewIdFor } from './apkg';
 export { parseCsv, parseRows, detectSeparator } from './csv';
-export { chunkDeck, type ImportChunk } from './chunk';
+export { chunkDeck, estimateCardBytes, type ImportChunk } from './chunk';
 export { htmlToText, decodeEntities } from './text';
 export { renderTemplate, renderCloze, type RenderContext, type Rendered } from './template';
 export * from './limits';

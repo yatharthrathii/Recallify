@@ -24,6 +24,12 @@ export const reportModel = z.object({
   baseline: optimizerEvaluation.nullable(),
   /** The fitted parameters on the same history. Null when not fitted. */
   candidate: optimizerEvaluation.nullable(),
+  /**
+   * The parameters this account is scheduled with today, on the same
+   * history: the candidate once adopted, an earlier fit if one was adopted
+   * before, else the defaults. What the exam forecast quotes.
+   */
+  current: optimizerEvaluation.nullable().default(null),
   lossImprovement: z.number().nullable(),
   /** Signed: positive means more reviews a day, which is often the honest answer. */
   workloadChange: z.number().nullable(),

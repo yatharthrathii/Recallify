@@ -1,9 +1,10 @@
 'use client';
 
 import { formatCount, formatPercent } from '@recallify/core';
-import { memoryLevel, type MemoryLevel } from '@recallify/tokens';
+import { memoryLevel } from '@recallify/tokens';
 import { motion, useReducedMotion } from 'motion/react';
 import { useState } from 'react';
+import { LEVEL_BG_CLASS } from '@/components/ui/misc';
 import { cn } from '@/lib/cn';
 
 interface Bucket {
@@ -12,13 +13,6 @@ interface Bucket {
   retention: number | null;
 }
 
-const LEVEL_BG: Record<MemoryLevel, string> = {
-  strong: 'bg-mem-strong',
-  good: 'bg-mem-good',
-  fading: 'bg-mem-fading',
-  weak: 'bg-mem-weak',
-  lost: 'bg-mem-lost',
-};
 
 /**
  * Reviews by hour or by weekday. The same two encodings as the heatmap, kept
@@ -71,7 +65,7 @@ export function PatternBars({
                   ? 'bg-line-strong'
                   : bucket.retention === null
                     ? 'bg-ink/45'
-                    : LEVEL_BG[memoryLevel(bucket.retention)],
+                    : LEVEL_BG_CLASS[memoryLevel(bucket.retention)],
                 active !== null && active !== i && 'opacity-55',
               )}
             />
