@@ -53,8 +53,10 @@ describe('account and settings', () => {
       .send({ timezone: 'Asia/Calcutta' })
       .expect(200);
     expect(renamed.body.timezone).toBe('Asia/Kolkata');
+    // A later device does not move a zone that is already set: the one the
+    // settings call just stored stays, not the one this sign-in reports.
     await signIn('Asia/Tokyo');
-    expect((await me()).timezone).toBe('Europe/Lisbon');
+    expect((await me()).timezone).toBe('Asia/Kolkata');
 
     // Settings moves it on purpose.
     const moved = await h
