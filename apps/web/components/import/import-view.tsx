@@ -281,7 +281,7 @@ export function ImportView() {
           ) : null}
 
           <Section title="What comes across" className="mt-12">
-            <dl className="grid gap-x-8 gap-y-4 text-ui sm:grid-cols-2">
+            <dl className="grid grid-cols-1 gap-x-8 gap-y-4 text-ui sm:grid-cols-2">
               <div>
                 <dt className="font-medium text-ink">Kept</dt>
                 <dd className="mt-1 text-ink-muted">

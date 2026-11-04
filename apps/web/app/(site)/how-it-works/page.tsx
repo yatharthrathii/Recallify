@@ -80,7 +80,7 @@ export default function HowItWorksPage() {
               <StaggerItem
                 as="li"
                 key={step.title}
-                className="grid gap-x-8 gap-y-2 border-b border-line-strong py-8 sm:grid-cols-[72px_minmax(0,1fr)]"
+                className="grid grid-cols-1 gap-x-8 gap-y-2 border-b border-line-strong py-8 sm:grid-cols-[72px_minmax(0,1fr)]"
               >
                 <span className="font-display text-[44px] font-medium leading-none text-ink-faint">
                   {String(i + 1).padStart(2, '0')}
@@ -100,7 +100,7 @@ export default function HowItWorksPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SplitHeading
               as="h2"
@@ -132,7 +132,7 @@ export default function HowItWorksPage() {
             {FAQ.map((item) => (
               <StaggerItem
                 key={item.q}
-                className="grid gap-x-12 gap-y-2 border-b border-line py-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]"
+                className="grid grid-cols-1 gap-x-12 gap-y-2 border-b border-line py-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]"
               >
                 <dt className="text-h3 font-semibold text-ink">{item.q}</dt>
                 <dd className="max-w-[68ch] text-body text-ink-muted">{item.a}</dd>

@@ -176,7 +176,8 @@ export function Segmented<T extends string>({
             tabIndex={active ? 0 : -1}
             onClick={() => onChange(option.value)}
             className={cn(
-              'h-8 flex-1 rounded-md px-3 text-ui font-medium transition-colors duration-90',
+              // nowrap, or the equal split hands the longer label a line break.
+              'h-8 flex-1 whitespace-nowrap rounded-md px-3 text-ui font-medium transition-colors duration-90',
               active
                 ? 'bg-surface text-ink shadow-[var(--shadow-sm)]'
                 : 'text-ink-muted hover:text-ink',

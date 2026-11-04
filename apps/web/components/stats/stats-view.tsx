@@ -184,7 +184,7 @@ function MemoryModel() {
 
   return (
     <Section title="Your memory model">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div>
           <p className="max-w-[60ch] text-ui text-ink-muted">
             Recallify starts everyone on the published FSRS parameters, fitted to millions

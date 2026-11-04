@@ -35,6 +35,8 @@ export const config = {
   matcher: [
     '/today/:path*',
     '/decks/:path*',
+    '/library/:path*',
+    '/import/:path*',
     '/review/:path*',
     '/stats/:path*',
     '/settings/:path*',

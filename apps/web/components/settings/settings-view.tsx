@@ -210,7 +210,7 @@ function Scheduling({ user }: { user: CurrentUser }) {
       </div>
 
       <form
-        className="mt-6 grid gap-5 sm:grid-cols-2"
+        className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2"
         onSubmit={(event) => {
           event.preventDefault();
           update.mutate(

@@ -73,7 +73,7 @@ export function ProductShowcase() {
   return (
     <section className="border-t border-line-strong bg-surface">
       <div className="mx-auto max-w-310 px-4 py-20 sm:px-8 lg:py-28">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
           <div>
             <Reveal>
               <p className="eyebrow">Inside the app</p>
@@ -94,7 +94,7 @@ export function ProductShowcase() {
         </div>
 
         <div
-          className="mt-10 grid gap-8 lg:mt-14 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-12"
+          className="mt-10 grid grid-cols-1 gap-8 lg:mt-14 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-12"
           onMouseEnter={() => setHeld(true)}
         >
           <div

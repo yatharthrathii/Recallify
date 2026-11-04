@@ -84,7 +84,9 @@ export function SiteHeader({ signedIn }: { signedIn: boolean }) {
             </LinkButton>
           ) : (
             <>
-              <LinkButton href="/login" variant="ghost" className="hidden sm:inline-flex">
+              {/* max-sm, not `hidden sm:inline-flex`: the button already sets
+                  inline-flex, and with plain clsx that beats a bare `hidden`. */}
+              <LinkButton href="/login" variant="ghost" className="max-sm:hidden">
                 Sign in
               </LinkButton>
               <LinkButton href="/register" variant="primary">

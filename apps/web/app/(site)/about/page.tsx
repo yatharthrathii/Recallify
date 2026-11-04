@@ -66,7 +66,7 @@ export default function AboutPage() {
       />
 
       <section>
-        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div className="lg:sticky lg:top-24 lg:self-start">
             <SplitHeading
               as="h2"
@@ -110,7 +110,7 @@ export default function AboutPage() {
           <Stagger
             inView
             gap={0.1}
-            className="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2"
+            className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-line bg-line sm:grid-cols-2"
           >
             {PRINCIPLES.map((item) => (
               <StaggerItem key={item.title} className="bg-surface p-6 sm:p-8">
@@ -125,7 +125,7 @@ export default function AboutPage() {
       </section>
 
       <section className="border-t border-line-strong">
-        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div>
             <SplitHeading
               as="h2"
@@ -143,7 +143,7 @@ export default function AboutPage() {
             {GUARANTEES.map(([term, detail]) => (
               <StaggerItem
                 key={term}
-                className="grid gap-x-8 gap-y-1 border-b border-line py-4 sm:grid-cols-[140px_minmax(0,1fr)]"
+                className="grid grid-cols-1 gap-x-8 gap-y-1 border-b border-line py-4 sm:grid-cols-[140px_minmax(0,1fr)]"
               >
                 <dt className="tabular text-caption uppercase tracking-[0.06em] text-ink-faint sm:pt-1">
                   {term}
@@ -156,7 +156,7 @@ export default function AboutPage() {
       </section>
 
       <section className="border-t border-line-strong bg-highlight">
-        <div className="mx-auto grid max-w-310 gap-8 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:py-20">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-8 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:py-20">
           <div>
             <SplitHeading
               as="h2"

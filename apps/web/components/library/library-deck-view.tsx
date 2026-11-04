@@ -112,7 +112,7 @@ export function LibraryDeckView({ deckId }: { deckId: string }) {
         </p>
       ) : null}
 
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         <Section
           title="A look inside"
           aside={
@@ -128,7 +128,7 @@ export function LibraryDeckView({ deckId }: { deckId: string }) {
           ) : (
             <ul className="divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface">
               {d.sampleCards.map((card, i) => (
-                <li key={i} className="grid gap-x-4 gap-y-0.5 px-4 py-3 sm:grid-cols-2 sm:px-5">
+                <li key={i} className="grid grid-cols-1 gap-x-4 gap-y-0.5 px-4 py-3 sm:grid-cols-2 sm:px-5">
                   <span className="line-clamp-2 text-ui font-medium text-ink">{card.front}</span>
                   <span className="line-clamp-2 text-ui text-ink-muted">{card.back}</span>
                 </li>

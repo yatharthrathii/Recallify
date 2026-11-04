@@ -360,7 +360,7 @@ export function PageShell({
         </div>
         {actions ? (
           <motion.div
-            className="flex shrink-0 flex-wrap items-center gap-2"
+            className="flex max-w-full shrink-0 flex-wrap items-center gap-2"
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: EASE, delay: 0.3 }}

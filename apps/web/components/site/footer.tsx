@@ -34,7 +34,7 @@ export function SiteFooter({ signedIn }: { signedIn: boolean }) {
   return (
     <footer className="overflow-hidden border-t border-line-strong bg-surface">
       <div className="mx-auto max-w-310 px-4 pt-14 sm:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:gap-16">
           <div>
             <span className="flex items-center gap-2 text-ink">
               <Mark />

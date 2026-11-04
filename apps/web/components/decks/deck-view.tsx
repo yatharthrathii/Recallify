@@ -214,8 +214,11 @@ export function DeckView({ deckId }: { deckId: string }) {
     >
       {d ? <LiveDeckPanel deck={d} /> : null}
 
-      {/* Five tiles: at three columns the last one takes the rest of its row. */}
-      <StatStrip className="mb-10 sm:grid-cols-3 sm:[&>*:nth-child(5)]:col-span-2 lg:grid-cols-5 lg:[&>*:nth-child(5)]:col-span-1">
+      {/* Five tiles: at two and three columns the last one takes the rest of
+          its row (StatStrip's own rule); at five it has a column of its own.
+          Five columns wait for `wide` (1400px): beside the sidebar at anything
+          less each tile is too narrow for "1.7 months" on one line. */}
+      <StatStrip className="mb-10 sm:grid-cols-3 wide:grid-cols-5 wide:[&>*:last-child:nth-child(odd)]:col-span-1">
         <StatTile
           label="Cards"
           value={
@@ -281,7 +284,7 @@ export function DeckView({ deckId }: { deckId: string }) {
         />
       </StatStrip>
 
-      <div className="mb-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
+      <div className="mb-10 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
         <Section
           title="Where this deck is heading"
           aside="If you stopped reviewing today"

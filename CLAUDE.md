@@ -100,6 +100,30 @@ brings an existing Anki user in — without it they would have to abandon years 
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
 
+### Notes carried out of the responsive pass (November 2026)
+
+- **A grid needs a base `grid-cols-1`.** With columns set only at a
+  breakpoint, the single implicit track below it is `auto`, whose floor is
+  the min-content of its items, and one `truncate` label pushes the whole
+  track past the phone's edge. Exam day on Stats was 124px too wide at 390px
+  for exactly this. `grid-cols-1` is `repeat(1, minmax(0, 1fr))`.
+- **Arbitrary variants compete by specificity, not by order.** StatStrip's
+  `[&>*:last-child:nth-child(odd)]:col-span-2` beat the deck page's
+  `sm:[&>*:nth-child(5)]:col-span-2`, so the five-tile strip showed an empty
+  cell from 640 to 1023px. An override must reuse the same selector.
+- **`hidden` does not beat a component's own `inline-flex` under plain
+  clsx.** The site header's Sign in button was never hidden on phones and
+  pushed the bar 64px past a 320px screen; it is `max-sm:hidden` now.
+- The proxy's `config.matcher` must list every prefix in `APP_PREFIXES`:
+  `/library` and `/import` were missing, so signed-out visitors got the page
+  shell instead of the sign-in redirect.
+- After sign-in the login page prefetches its own `/register` link, the proxy
+  redirects that prefetch to `/today`, and Next answers the redirected RSC
+  prefetch with a 404. It is one console line per sign-in and nothing the
+  user sees; the real navigation is a 200. Left alone on purpose, since
+  skipping the redirect for prefetches would let a prefetched auth page be
+  served to a signed-in visitor.
+
 ### Notes carried out of phase 8b
 
 - **Sync writes text and reads no state.** `LibraryService.diff` reads ids
