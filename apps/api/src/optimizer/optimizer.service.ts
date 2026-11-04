@@ -219,6 +219,7 @@ export class OptimizerService {
         dailyNewLimit: true,
         dailyReviewLimit: true,
         paramsOptimizedAt: true,
+        timezone: true,
       },
     });
 
@@ -240,6 +241,7 @@ export class OptimizerService {
         dailyNewLimit: true,
         dailyReviewLimit: true,
         paramsOptimizedAt: true,
+        timezone: true,
       },
     });
 

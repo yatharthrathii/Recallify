@@ -167,7 +167,7 @@ function ReportBody({ report, nextAllowedAt }: { report: MemoryReport; nextAllow
         }
       >
         {model.fitted && model.baseline && model.candidate ? (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
             <FitTable baseline={model.baseline} candidate={model.candidate} />
             <div className="self-start rounded-lg border border-line bg-surface px-5 py-4">
               <p className="text-ui text-ink">
@@ -222,7 +222,7 @@ function ReportBody({ report, nextAllowedAt }: { report: MemoryReport; nextAllow
       </Section>
 
       <Section title="When you remember">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <div>
             <p className="eyebrow mb-3">By hour, your time</p>
             <PatternBars

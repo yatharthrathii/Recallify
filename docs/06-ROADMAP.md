@@ -367,6 +367,12 @@ What is new:
 - [x] Web: `/library`, `/library/:id`, the live strip on a deck page for
       authors and followers, publish and follow flows. 12 integration tests,
       one end-to-end flow with two accounts.
+- [x] **Afterwards, the loose ends from the QA pass:** the library and an
+      author's changelog page through their cursors ("Show more") instead of
+      stopping at the newest 50; and days are counted in the account's own
+      time zone (`users.timezone`, from the device at sign-up, movable in
+      Settings), so a streak no longer breaks at midnight UTC for someone in
+      Kolkata. Null stays UTC, so nobody's history moved.
 
 Content is the harder half. A live deck is only worth subscribing to if
 someone keeps it good, and that is writing and maintenance, not engineering.

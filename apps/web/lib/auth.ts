@@ -1,3 +1,4 @@
+import { canonicalTimezone } from '@recallify/contracts';
 import { ApiError, NetworkError, type Problem } from '@recallify/core';
 
 /**
@@ -53,13 +54,32 @@ async function switchAccount(action: string, body?: unknown): Promise<void> {
   await post(action, body);
 }
 
+/**
+ * The zone this device is in, as the browser reports it. Sent with sign-up
+ * and sign-in so the streak and the heatmap count the person's days, not
+ * the server's; the API applies it only to an account that has none yet.
+ */
+export function deviceTimezone(): string | undefined {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return zone ? canonicalTimezone(zone) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function withZone<T extends object>(body: T): T & { timezone?: string } {
+  const timezone = deviceTimezone();
+  return timezone ? { ...body, timezone } : body;
+}
+
 export const login = (body: { email: string; password: string }) =>
-  switchAccount('login', body);
+  switchAccount('login', withZone(body));
 export const register = (body: {
   email: string;
   password: string;
   displayName?: string;
-}) => switchAccount('register', body);
+}) => switchAccount('register', withZone(body));
 export const logout = async () => {
   await post('logout');
   await clearOfflineData();

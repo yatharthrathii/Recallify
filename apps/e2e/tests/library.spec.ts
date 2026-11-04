@@ -46,6 +46,7 @@ test('publish a deck, follow it, and receive an edit without losing progress', a
     await card.getByLabel('Front').fill(front);
     await card.getByLabel('Back').fill(back);
     await card.getByRole('button', { name: 'Save and close' }).click();
+    await expect(card).toBeHidden();
     await expect(page.getByText(front)).toBeVisible();
   }
   await page.getByRole('button', { name: 'Deck options' }).click();

@@ -51,7 +51,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
           className="font-display mt-5 max-w-[15ch] text-[clamp(44px,8.6vw,124px)] font-semibold leading-[0.94] text-ink"
         />
 
-        <div className="mt-10 grid gap-10 lg:mt-14 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14">
+        <div className="mt-10 grid grid-cols-1 gap-10 lg:mt-14 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-14">
           <motion.div
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
@@ -65,7 +65,7 @@ export function Hero({ signedIn }: { signedIn: boolean }) {
             </p>
             {/* One button. Signing in lives in the header, where someone who
                 already has an account will look for it. */}
-            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:flex-wrap sm:items-center">
               <LinkButton
                 href={signedIn ? '/today' : '/register'}
                 variant="primary"

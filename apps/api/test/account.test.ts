@@ -29,6 +29,58 @@ describe('account and settings', () => {
     return user;
   }
 
+  it('takes the zone a device reports once, moves it only from settings, and refuses one it does not know', async () => {
+    const user = await fresh('zoned');
+    const me = async () =>
+      (await h.http().get(`${API}/auth/me`).set(auth(user)).expect(200)).body as { timezone: string | null };
+    expect((await me()).timezone).toBeNull();
+
+    const signIn = (timezone: string) =>
+      h
+        .http()
+        .post(`${API}/auth/login`)
+        .send({ email: user.email, password: 'correct-horse-battery', timezone })
+        .expect(200);
+
+    // The first device to report a zone sets it; the next one does not move it.
+    await signIn('Europe/Lisbon');
+    expect((await me()).timezone).toBe('Europe/Lisbon');
+    // The old name a browser may still report is stored as the current one.
+    const renamed = await h
+      .http()
+      .patch(`${API}/auth/me`)
+      .set(auth(user))
+      .send({ timezone: 'Asia/Calcutta' })
+      .expect(200);
+    expect(renamed.body.timezone).toBe('Asia/Kolkata');
+    await signIn('Asia/Tokyo');
+    expect((await me()).timezone).toBe('Europe/Lisbon');
+
+    // Settings moves it on purpose.
+    const moved = await h
+      .http()
+      .patch(`${API}/auth/me`)
+      .set(auth(user))
+      .send({ timezone: 'Asia/Tokyo' })
+      .expect(200);
+    expect(moved.body.timezone).toBe('Asia/Tokyo');
+
+    const refused = await h
+      .http()
+      .patch(`${API}/auth/me`)
+      .set(auth(user))
+      .send({ timezone: 'Mars/Olympus_Mons' })
+      .expect(400);
+    expect(refused.body.errors).toHaveProperty('timezone');
+    expect((await me()).timezone).toBe('Asia/Tokyo');
+
+    await h
+      .http()
+      .post(`${API}/auth/register`)
+      .send({ email: `zone-${randomUUID()}@recallify.test`, password: 'correct-horse-battery', timezone: 'Nowhere' })
+      .expect(400);
+  });
+
   it('updates the retention target and daily limits', async () => {
     const user = await fresh('settings');
 

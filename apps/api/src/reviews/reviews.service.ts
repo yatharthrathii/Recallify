@@ -18,13 +18,12 @@ import {
   explain as explainCard,
   retrievability,
   schedule,
-  type FsrsConfig,
   type Rating,
   type SchedulingCard,
 } from '@recallify/fsrs';
-import { startOfDay } from '../common/dates';
+import { dayStart } from '../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
-import { FsrsConfigService } from '../scheduling/fsrs-config.service';
+import { FsrsConfigService, type UserScheduling } from '../scheduling/fsrs-config.service';
 import { clampReviewedAt, reviewLogColumns } from '../scheduling/review-row';
 import { StatsService } from '../stats/stats.service';
 
@@ -66,7 +65,7 @@ export class ReviewsService {
   private async apply(
     userId: string,
     input: SubmitReviewRequest,
-    config: FsrsConfig,
+    config: UserScheduling,
     now: Date,
   ): Promise<ReviewOutcome> {
     const card = await this.prisma.card.findFirst({ where: { id: input.cardId, userId } });
@@ -117,7 +116,7 @@ export class ReviewsService {
         // Stats owns its own table; reviews hands it the transaction rather
         // than writing user_stats itself, so xp and the review land together
         // or not at all.
-        await this.stats.recordReview(tx, userId, reviewedAt);
+        await this.stats.recordReview(tx, userId, reviewedAt, config.timezone);
 
         return row;
       });
@@ -197,7 +196,8 @@ export class ReviewsService {
   async queue(userId: string, query: QueueQuery): Promise<QueueResponse> {
     const config = await this.scheduling.forUser(userId);
     const now = new Date();
-    const today = startOfDay(now);
+    // What counts as today is the user's day, not the server's.
+    const today = dayStart(now, config.timezone);
 
     const deckFilter = query.deckId ? { deckId: query.deckId } : {};
     const base = { userId, suspendedAt: null, ...deckFilter };

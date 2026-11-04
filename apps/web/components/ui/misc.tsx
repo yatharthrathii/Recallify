@@ -124,7 +124,9 @@ export function StatTile({
 /**
  * A bordered group of tiles that share hairlines instead of each being a card.
  * The hairlines are the container showing through 1px gaps, so they stay right
- * at any column count. An odd tile out on a phone takes the full row.
+ * at any column count. An odd tile out takes the rest of its row; a caller
+ * whose column count divides the tile count resets it with the same selector,
+ * because a less specific one (`nth-child(5)`) loses to this rule.
  */
 export function StatStrip({
   children,
@@ -139,7 +141,7 @@ export function StatStrip({
       delay={0.1}
       className={cn(
         'grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-line bg-line',
-        '[&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1',
+        '[&>*:last-child:nth-child(odd)]:col-span-2',
         className,
       )}
     >

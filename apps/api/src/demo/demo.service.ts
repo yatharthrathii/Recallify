@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { MIN_REVIEWS } from '@recallify/optimizer';
 import { randomInt, randomUUID } from 'node:crypto';
+import { startOfDay } from '../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitService } from '../rate-limit/rate-limit.service';
 import { levelFromXp } from '../stats/stats.service';
@@ -98,7 +99,8 @@ export class DemoService {
   }): Promise<SeededAccount> {
     const now = input.now ?? new Date();
     const sim = enoughHistory(now);
-    const { current, longest } = streaks(sim.studyDays, now);
+    // Simulated in UTC, and the account has no zone, so its days are UTC days.
+    const { current, longest } = streaks(sim.studyDays, startOfDay(now));
     const xp = sim.reviewCount * XP_PER_REVIEW;
     const lastStudyDate = sim.studyDays[sim.studyDays.length - 1] ?? null;
 

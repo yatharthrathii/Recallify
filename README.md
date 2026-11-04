@@ -136,7 +136,7 @@ Every push runs five jobs in [CI](.github/workflows/ci.yml):
 |---|---|
 | lint, typecheck, build | Zero lint warnings allowed. Size budgets on the engine and the web bundle |
 | unit tests | About 260 tests over the packages. `packages/fsrs`, `optimizer` and `import` are held at 100% coverage |
-| integration tests | About 115 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets, import, the report, live decks |
+| integration tests | About 120 API tests, most against a real Postgres: ownership, idempotency, rate limits, resets, import, the report, live decks, time zones |
 | end to end | Playwright on the production builds, desktop and phone: sign up to review to stats, demo, offline review, import to report, publish and follow |
 | lighthouse | Accessibility, best practices and SEO must stay at 95 or above on public pages |
 

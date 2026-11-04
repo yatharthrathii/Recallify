@@ -88,7 +88,7 @@ export function DemoCurve() {
         summary={`A forgetting curve for one card reviewed five times at a ${formatPercent(target)} retention target.`}
       />
 
-      <div className="mt-5 grid gap-5 border-t border-line pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+      <div className="mt-5 grid grid-cols-1 gap-5 border-t border-line pt-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div>
           <div className="mb-2 flex items-baseline justify-between">
             <span className="text-ui font-medium text-ink">Retention target</span>

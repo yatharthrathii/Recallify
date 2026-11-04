@@ -1,6 +1,7 @@
 import type { UpdateCardRequest, UpdateDeckRequest, UpdateSettingsRequest } from '@recallify/contracts';
 import {
   keepPreviousData,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -273,11 +274,21 @@ export function useImportCards() {
 
 // ---------------------------------------------------------------- library
 
+/** A page of the library or of a changelog. The next page is fetched on request, never by scrolling. */
+const LIBRARY_PAGE = 50;
+
 export function useLibrary(q?: string) {
   const api = useApi();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.library.list(q),
-    queryFn: () => api.library.list({ ...(q ? { q } : {}), limit: 50 }),
+    queryFn: ({ pageParam }) =>
+      api.library.list({
+        ...(q ? { q } : {}),
+        ...(pageParam ? { cursor: pageParam } : {}),
+        limit: LIBRARY_PAGE,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
     // The last list stays on screen while a new search loads, instead of
     // skeletons flashing on every keystroke.
     placeholderData: keepPreviousData,
@@ -294,9 +305,15 @@ export function useLibraryDeck(deckId: string) {
 
 export function useDeckChanges(deckId: string, enabled = true) {
   const api = useApi();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: keys.library.changes(deckId),
-    queryFn: () => api.library.changes(deckId, { limit: 50 }),
+    queryFn: ({ pageParam }) =>
+      api.library.changes(deckId, {
+        ...(pageParam ? { cursor: pageParam } : {}),
+        limit: LIBRARY_PAGE,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
     enabled,
   });
 }

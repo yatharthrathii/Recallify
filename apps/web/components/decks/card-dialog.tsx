@@ -161,7 +161,7 @@ function EditCard({ card, onDone }: { card: Card; onDone: () => void }) {
   const dirty = front !== card.front || back !== card.back || hint !== (card.hint ?? '');
 
   return (
-    <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
       <form
         className="flex flex-col gap-5"
         onSubmit={(event) => {

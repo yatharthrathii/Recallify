@@ -9,7 +9,7 @@ import type {
   UpdateDeckRequest,
 } from '@recallify/contracts';
 import { deckColor } from '@recallify/contracts';
-import { addDays, dayKey, startOfDay } from '../common/dates';
+import { addDays, dayKey, instantOf, keyOfDay, localDay } from '../common/dates';
 import { PrismaService } from '../prisma/prisma.service';
 import { FsrsConfigService } from '../scheduling/fsrs-config.service';
 import { meanRetrievability } from '../scheduling/recall';
@@ -229,7 +229,8 @@ export class DecksService {
     });
 
     const now = new Date();
-    const today = startOfDay(now);
+    const today = localDay(now, config.timezone);
+    const todayStart = instantOf(today, config.timezone);
 
     const counts = { NEW: 0, LEARNING: 0, REVIEW: 0, RELEARNING: 0 };
     const dueByDay = new Map<string, number>();
@@ -244,8 +245,7 @@ export class DecksService {
 
       // Overdue cards land on today rather than in the past, which is where
       // they actually have to be answered.
-      const bucket = card.dueAt <= today ? today : startOfDay(card.dueAt);
-      const key = dayKey(bucket);
+      const key = dayKey(card.dueAt < todayStart ? now : card.dueAt, config.timezone);
       dueByDay.set(key, (dueByDay.get(key) ?? 0) + 1);
 
       // A NEW card has no memory to measure; it is left out of the mean.
@@ -257,7 +257,7 @@ export class DecksService {
     const seen = cards.filter((c) => c.state !== 'NEW');
 
     const forecast = Array.from({ length: FORECAST_DAYS }, (_, i) => {
-      const date = dayKey(addDays(today, i));
+      const date = keyOfDay(addDays(today, i));
       return { date, due: dueByDay.get(date) ?? 0 };
     });
 

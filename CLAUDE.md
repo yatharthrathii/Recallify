@@ -74,6 +74,10 @@ That history is why the honesty rules below are not negotiable.
   only, and keeps a changelog written by a conditional insert on every card
   write. Web: `/library`, `/library/:id`, the live strip on a deck page.
   12 integration tests, one two-account E2E flow.
+- Phase 8c done. The loose ends: library and changelog page by cursor
+  ("Show more"), and days are counted in the account's time zone
+  (`users.timezone`, `common/dates.ts`). The hero's demo button wraps while
+  it waits.
 - Next: phase 9, Android.
 
 Rate limits live in Postgres (`rate_limit_hits`), never in memory: the API is
@@ -95,6 +99,30 @@ Memory Report became phase 8, ahead of mobile (now phase 9). Import is what
 brings an existing Anki user in — without it they would have to abandon years of
 history — and the Report is the optimizer's output made readable, which is the
 one thing here nobody else sells. Neither needs the mobile app to exist.
+
+### Notes carried out of the responsive pass (November 2026)
+
+- **A grid needs a base `grid-cols-1`.** With columns set only at a
+  breakpoint, the single implicit track below it is `auto`, whose floor is
+  the min-content of its items, and one `truncate` label pushes the whole
+  track past the phone's edge. Exam day on Stats was 124px too wide at 390px
+  for exactly this. `grid-cols-1` is `repeat(1, minmax(0, 1fr))`.
+- **Arbitrary variants compete by specificity, not by order.** StatStrip's
+  `[&>*:last-child:nth-child(odd)]:col-span-2` beat the deck page's
+  `sm:[&>*:nth-child(5)]:col-span-2`, so the five-tile strip showed an empty
+  cell from 640 to 1023px. An override must reuse the same selector.
+- **`hidden` does not beat a component's own `inline-flex` under plain
+  clsx.** The site header's Sign in button was never hidden on phones and
+  pushed the bar 64px past a 320px screen; it is `max-sm:hidden` now.
+- The proxy's `config.matcher` must list every prefix in `APP_PREFIXES`:
+  `/library` and `/import` were missing, so signed-out visitors got the page
+  shell instead of the sign-in redirect.
+- After sign-in the login page prefetches its own `/register` link, the proxy
+  redirects that prefetch to `/today`, and Next answers the redirected RSC
+  prefetch with a 404. It is one console line per sign-in and nothing the
+  user sees; the real navigation is a 200. Left alone on purpose, since
+  skipping the redirect for prefetches would let a prefetched auth page be
+  served to a signed-in visitor.
 
 ### Notes carried out of phase 8b
 
@@ -299,9 +327,15 @@ one thing here nobody else sells. Neither needs the mobile app to exist.
 - **The streak moves forward only.** An offline batch from last week adds to
   the log and the heatmap but does not retroactively repair a broken streak.
   Recomputing it would mean scanning the whole log on every single review.
-- Day bucketing is **UTC**, in `common/dates.ts`. Per-user timezones are a real
-  feature and a later one; the server's local zone would make the streak break
-  at midnight in whatever region the container happens to run in.
+- Day bucketing is **in the account's time zone**, in `common/dates.ts`.
+  `users.timezone` is set from the device at sign-up, filled in by the first
+  sign-in that reports one, and moved only from Settings; null counts as UTC,
+  which is what every account was counted in before the column existed. A
+  calendar day travels as a `Date` at UTC midnight (a day number), and
+  `instantOf` turns it into the moment it begins in a zone; SQL groups with
+  `"col" AT TIME ZONE 'UTC' AT TIME ZONE $zone`. The server's local zone is
+  never used: it would make the streak break at midnight in whatever region
+  the container happens to run in. The AI allowance stays a UTC quota.
 - `/optimizer/run` **saves nothing**. It returns a proposal with the backtest
   attached, because the workload change is frequently *upward* and the user
   should see that before adopting it. Fitting runs inline with a capped

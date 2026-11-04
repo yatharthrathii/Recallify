@@ -65,7 +65,7 @@ export default function AndroidPage() {
           <Stagger
             inView
             gap={0.1}
-            className="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3"
+            className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3"
           >
             {BUILT.map((item) => (
               <StaggerItem key={item.title} className="bg-surface p-6 sm:p-8">
@@ -80,7 +80,7 @@ export default function AndroidPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto grid max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-24">
           <div>
             <SplitHeading
               as="h2"

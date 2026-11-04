@@ -48,6 +48,11 @@ model User {
   // a paid tier would change -- and that should be an UPDATE, not a deploy.
   aiDailyLimit Int @default(20)
 
+  // IANA zone the account's days are counted in: streak, heatmap, forecast,
+  // exam day. Null until a device reports one at sign-up or sign-in, and
+  // counted as UTC until then.
+  timezone String?
+
   decks         Deck[]
   cards         Card[]
   reviews       Review[]

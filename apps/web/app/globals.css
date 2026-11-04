@@ -25,6 +25,12 @@
   --radius-md: 8px;
   --radius-lg: 12px;
 
+  /* One step past xl, for rows that need about 1400px beside the sidebar.
+     Named, and in rem, because an arbitrary `min-[1400px]:` variant is
+     emitted before the rem breakpoints and loses to `sm:` on the same
+     property. */
+  --breakpoint-wide: 87.5rem;
+
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 

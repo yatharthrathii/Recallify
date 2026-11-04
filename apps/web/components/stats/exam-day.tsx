@@ -43,7 +43,7 @@ export function ExamDay() {
 
   return (
     <Section title="Exam day" className="mb-10">
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
         <div>
           <p className="max-w-[60ch] text-ui text-ink-muted">
             Pick the date. Every card you have reviewed is projected forward to it
@@ -148,7 +148,7 @@ export function ExamDay() {
                     <span>100%</span>
                   </div>
 
-                  <div className="mt-6 grid gap-6 sm:grid-cols-2">
+                  <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <CardList
                       title="Most likely gone by then"
                       cards={e.atRisk.slice(0, 8)}

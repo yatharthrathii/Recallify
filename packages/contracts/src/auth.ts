@@ -20,14 +20,69 @@ export const email = z.string().trim().toLowerCase().email().max(254);
  */
 export const password = z.string().min(10).max(72);
 
+/** An IANA zone name this runtime knows, such as `Asia/Kolkata`. */
+export function isTimezone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Browsers still report some zones by a city's old name: Chrome says
+ * `Asia/Calcutta` for a device in Kolkata. Both names schedule identically;
+ * the current one is what gets stored and shown.
+ */
+const RENAMED: Record<string, string> = {
+  'Asia/Calcutta': 'Asia/Kolkata',
+  'Asia/Dacca': 'Asia/Dhaka',
+  'Asia/Katmandu': 'Asia/Kathmandu',
+  'Asia/Macao': 'Asia/Macau',
+  'Asia/Rangoon': 'Asia/Yangon',
+  'Asia/Saigon': 'Asia/Ho_Chi_Minh',
+  'Asia/Thimbu': 'Asia/Thimphu',
+  'Asia/Ulan_Bator': 'Asia/Ulaanbaatar',
+  'Europe/Kiev': 'Europe/Kyiv',
+  'America/Buenos_Aires': 'America/Argentina/Buenos_Aires',
+  'Atlantic/Faeroe': 'Atlantic/Faroe',
+  'Pacific/Ponape': 'Pacific/Pohnpei',
+  'Pacific/Truk': 'Pacific/Chuuk',
+};
+
+export function canonicalTimezone(value: string): string {
+  return RENAMED[value] ?? value;
+}
+
+/**
+ * The zone the account's days are counted in: streak, heatmap, forecast,
+ * exam day. A device reports its own at sign-up, and a sign-in fills it in
+ * for an account that has none yet; it never overrides one that is set,
+ * because a week on a trip should not move the heatmap.
+ */
+export const timezone = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine(isTimezone, { message: 'Not a time zone this server knows.' })
+  .transform(canonicalTimezone);
+
 export const registerRequest = z.object({
   email,
   password,
   displayName: z.string().trim().min(1).max(60).optional(),
+  timezone: timezone.optional(),
 });
 export type RegisterRequest = z.infer<typeof registerRequest>;
 
-export const loginRequest = z.object({ email, password });
+export const loginRequest = z.object({
+  email,
+  password,
+  /** Applied only to an account that has no zone yet. */
+  timezone: timezone.optional(),
+});
 export type LoginRequest = z.infer<typeof loginRequest>;
 
 /** Mobile only. Web sends nothing: the cookie travels on its own. */
@@ -61,6 +116,8 @@ export const currentUser = z.object({
   /** Empty until the optimizer has run; the engine falls back to defaults. */
   hasOptimizedParams: z.boolean(),
   paramsOptimizedAt: isoDate.nullable(),
+  /** Null means UTC: no device has reported a zone for this account yet. */
+  timezone: z.string().nullable(),
 });
 export type CurrentUser = z.infer<typeof currentUser>;
 
@@ -75,6 +132,7 @@ export const updateSettingsRequest = z
     desiredRetention: z.number().min(0.7).max(0.99),
     dailyNewLimit: z.number().int().min(0).max(9999),
     dailyReviewLimit: z.number().int().min(0).max(9999),
+    timezone,
   })
   .partial();
 export type UpdateSettingsRequest = z.infer<typeof updateSettingsRequest>;

@@ -78,7 +78,7 @@ export default async function LandingPage() {
       <ProductShowcase />
 
       <section>
-        <div className="mx-auto grid max-w-310 gap-10 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-32">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-10 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-32">
           <div className="lg:sticky lg:top-28 lg:self-start">
             <Reveal>
               <p className="eyebrow">What you get to see</p>
@@ -102,7 +102,7 @@ export default async function LandingPage() {
               <StaggerItem
                 as="li"
                 key={item.title}
-                className="group grid gap-x-8 gap-y-2 border-b border-line-strong py-8 sm:grid-cols-[72px_minmax(0,1fr)]"
+                className="group grid grid-cols-1 gap-x-8 gap-y-2 border-b border-line-strong py-8 sm:grid-cols-[72px_minmax(0,1fr)]"
               >
                 <span className="font-display text-[44px] font-medium leading-none text-ink-faint transition-colors duration-500 group-hover:text-accent">
                   {String(i + 1).padStart(2, '0')}
@@ -124,7 +124,7 @@ export default async function LandingPage() {
       {/* The one full-bleed block of brand colour on the page. */}
       <section className="bg-brand text-on-brand">
         <div className="mx-auto max-w-310 px-4 py-20 sm:px-8 lg:py-28">
-          <div className="mb-12 grid gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
+          <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-end">
             <SplitHeading
               as="h2"
               text="Do not take our word for it. Answer a card."
@@ -159,7 +159,7 @@ export default async function LandingPage() {
           <Stagger
             inView
             gap={0.1}
-            className="mt-10 grid gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3"
+            className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-line bg-line md:grid-cols-3"
           >
             {FOR.map((item) => (
               <StaggerItem
@@ -196,7 +196,7 @@ export default async function LandingPage() {
       </section>
 
       <section className="border-t border-line-strong bg-surface">
-        <div className="mx-auto grid max-w-310 gap-12 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
+        <div className="mx-auto grid grid-cols-1 max-w-310 gap-12 px-4 py-20 sm:px-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16 lg:py-28">
           <div>
             <Reveal>
               <p className="eyebrow">Straight answers</p>

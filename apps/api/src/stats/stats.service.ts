@@ -15,7 +15,15 @@ import type {
 } from '@recallify/contracts';
 import { elapsedDays, intervalFromRetention, retrievability, schedule } from '@recallify/fsrs';
 import { ReportService } from '../report/report.service';
-import { addDays, dayKey, daysBetween, startOfDay } from '../common/dates';
+import {
+  DAY_MS,
+  addDays,
+  dayStart,
+  instantOf,
+  keyOfDay,
+  localDay,
+  startOfDay,
+} from '../common/dates';
 import { measuredRetention } from './retention';
 import { streaks } from './streaks';
 import { PrismaService } from '../prisma/prisma.service';
@@ -72,6 +80,7 @@ export class StatsService {
     tx: Prisma.TransactionClient,
     userId: string,
     reviewedAt: Date,
+    zone: string,
   ): Promise<void> {
     const stats = await tx.userStats.findUnique({ where: { userId } });
     // Created with the user in AuthService, so absence means something is
@@ -83,9 +92,11 @@ export class StatsService {
       lastStudyDate: null as Date | null,
     };
 
-    const today = startOfDay(reviewedAt);
+    // Day values (see common/dates): the one being reviewed in, and the one
+    // last counted, which is stored as the same kind of value.
+    const today = localDay(reviewedAt, zone);
     const last = current.lastStudyDate ? startOfDay(current.lastStudyDate) : null;
-    const gap = last ? daysBetween(last, today) : null;
+    const gap = last ? Math.round((today.getTime() - last.getTime()) / DAY_MS) : null;
 
     let streak = current.streak;
     let lastStudyDate = current.lastStudyDate;
@@ -138,15 +149,18 @@ export class StatsService {
     userId: string,
     reviewsAdded: number,
     now: Date,
+    zone: string,
   ): Promise<void> {
+    // Timestamps are stored in UTC without a zone, so they are named as such
+    // before being read in the user's own.
     const days = await tx.$queryRaw<{ day: Date }[]>`
-      SELECT DISTINCT date_trunc('day', "reviewedAt")::date AS day
+      SELECT DISTINCT ("reviewedAt" AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date AS day
       FROM "reviews"
       WHERE "userId" = ${userId}
       ORDER BY 1
     `;
     const studyDays = days.map((r) => startOfDay(r.day));
-    const { current, longest } = streaks(studyDays, now);
+    const { current, longest } = streaks(studyDays, localDay(now, zone));
     const lastStudyDate = studyDays[studyDays.length - 1] ?? null;
 
     const stats = await tx.userStats.findUnique({ where: { userId } });
@@ -174,7 +188,8 @@ export class StatsService {
 
   async overview(userId: string): Promise<StatsOverview> {
     const now = new Date();
-    const windowStart = addDays(startOfDay(now), -RETENTION_WINDOW_DAYS);
+    const zone = await this.scheduling.zone(userId);
+    const windowStart = addDays(dayStart(now, zone), -RETENTION_WINDOW_DAYS);
 
     // Retention is measured, not predicted: of the cards the user was actually
     // asked to recall, how many did they. First-ever reviews are excluded --
@@ -210,13 +225,14 @@ export class StatsService {
    * would cross the wire to produce 365 numbers.
    */
   async heatmap(userId: string, query: HeatmapQuery): Promise<Heatmap> {
-    const from = addDays(startOfDay(new Date()), -(query.days - 1));
+    const zone = await this.scheduling.zone(userId);
+    const from = instantOf(addDays(localDay(new Date(), zone), -(query.days - 1)), zone);
 
     const rows = await this.prisma.$queryRaw<
       { day: Date; reviews: bigint; recalled: bigint; attempted: bigint }[]
     >`
       SELECT
-        date_trunc('day', "reviewedAt")::date                         AS day,
+        ("reviewedAt" AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date   AS day,
         COUNT(*)                                                      AS reviews,
         COUNT(*) FILTER (WHERE "rating" > 1 AND "prevState" <> 'NEW') AS recalled,
         COUNT(*) FILTER (WHERE "prevState" <> 'NEW')                  AS attempted
@@ -229,7 +245,7 @@ export class StatsService {
     return rows.map((r) => {
       const attempted = Number(r.attempted);
       return {
-        date: dayKey(r.day),
+        date: keyOfDay(startOfDay(r.day)),
         reviews: Number(r.reviews),
         // Null, not zero, on a day of nothing but new cards. Zero would read as
         // "forgot everything" on a day the user got nothing wrong.
@@ -247,12 +263,14 @@ export class StatsService {
   /** What the next N days look like if nothing new is added. */
   async forecast(userId: string, query: ForecastQuery): Promise<Forecast> {
     if (query.deckId) await this.assertDeckOwned(userId, query.deckId);
-    const today = startOfDay(new Date());
-    const end = addDays(today, query.days);
+    const zone = await this.scheduling.zone(userId);
+    const today = localDay(new Date(), zone);
+    const todayStart = instantOf(today, zone);
+    const end = instantOf(addDays(today, query.days), zone);
 
     const rows = await this.prisma.$queryRaw<{ day: Date; due: bigint }[]>`
       SELECT
-        GREATEST("dueAt"::date, ${today}::date) AS day,
+        GREATEST(("dueAt" AT TIME ZONE 'UTC' AT TIME ZONE ${zone})::date, ${today}::date) AS day,
         COUNT(*)                                AS due
       FROM "cards"
       WHERE "userId" = ${userId}
@@ -263,20 +281,20 @@ export class StatsService {
       ORDER BY 1
     `;
 
-    const byDay = new Map(rows.map((r) => [dayKey(r.day), Number(r.due)]));
+    const byDay = new Map(rows.map((r) => [keyOfDay(startOfDay(r.day)), Number(r.due)]));
 
     const backlog = await this.prisma.card.count({
       where: {
         userId,
         suspendedAt: null,
-        dueAt: { lt: today },
+        dueAt: { lt: todayStart },
         ...(query.deckId ? { deckId: query.deckId } : {}),
       },
     });
 
     return {
       days: Array.from({ length: query.days }, (_, i) => {
-        const date = dayKey(addDays(today, i));
+        const date = keyOfDay(addDays(today, i));
         return { date, due: byDay.get(date) ?? 0 };
       }),
       backlog,
@@ -329,14 +347,18 @@ export class StatsService {
    */
   async exam(userId: string, query: ExamQuery): Promise<ExamForecast> {
     const now = new Date();
-    const examAt = new Date(`${query.date}T00:00:00Z`);
-    const daysAway = daysBetween(now, examAt);
+    const config = await this.scheduling.forUser(userId);
+    // A calendar day where the user is, beginning at their midnight.
+    const examDay = new Date(`${query.date}T00:00:00Z`);
+    const daysAway = Math.round(
+      (examDay.getTime() - localDay(now, config.timezone).getTime()) / DAY_MS,
+    );
     if (daysAway < 0) throw new BadRequestException('The date has already passed.');
+    const examAt = instantOf(examDay, config.timezone);
 
     // Scheduling columns only: the text of every card is fetched afterwards
     // for the thirty that are listed, not for the thousands that are counted.
-    const [config, calibrationError, decks, cards] = await Promise.all([
-      this.scheduling.forUser(userId),
+    const [calibrationError, decks, cards] = await Promise.all([
       this.reports.latestCalibrationError(userId),
       this.prisma.deck.findMany({ where: { userId }, select: { id: true, title: true } }),
       this.prisma.card.findMany({
@@ -368,7 +390,7 @@ export class StatsService {
       (c): c is typeof c & { lastReviewedAt: Date } =>
         c.state !== 'NEW' && c.lastReviewedAt !== null,
     );
-    const daysNowToExam = Math.max(0, (examAt.getTime() - now.getTime()) / 86_400_000);
+    const daysNowToExam = Math.max(0, (examAt.getTime() - now.getTime()) / DAY_MS);
 
     let expected = 0;
     let variance = 0;

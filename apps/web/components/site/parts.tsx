@@ -53,7 +53,7 @@ export function SiteSection({
       as="section"
       className={cn('border-b border-line px-4 py-12 sm:px-8 lg:py-16', className)}
     >
-      <div className="mx-auto grid max-w-310 gap-x-12 gap-y-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
+      <div className="mx-auto grid grid-cols-1 max-w-310 gap-x-12 gap-y-5 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)]">
         {title ? (
           <h2
             {...(id ? { id } : {})}
